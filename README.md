@@ -18,7 +18,10 @@ Ohne diese Änderung liefert der Cache weiterhin die alte Fassung aus.
 
 ## Daten sichern
 
-Einstellungen → Backup laden. Erzeugt eine JSON-Datei mit dem kompletten Verlauf.
+Startseite → **📊** (oben rechts) → ganz nach unten scrollen → **Daten-Backup** →
+**📥 JSON-Backup herunterladen**. Erzeugt eine JSON-Datei mit dem kompletten Verlauf.
+
+Zurückspielen im selben Abschnitt über **📤 Backup wiederherstellen**.
 
 **Wichtig:** Löscht man die App vom Home-Bildschirm oder leert Safari seine
 Website-Daten, sind die Trainingsdaten weg. Regelmäßig sichern.

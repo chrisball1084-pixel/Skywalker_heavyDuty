@@ -387,6 +387,13 @@ html.theme-arnold .done-btn.copy{background:#F5A623;color:#000}
 .modal-title{font-family:var(--t-mono);font-size:15px;font-weight:700;color:var(--white);margin-bottom:12px;padding:0 20px}
 .modal-save{width:calc(100% - 40px);height:50px;border:none;background:var(--t-acc);color:var(--white);font-size:14px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;margin:8px 20px;display:block}
 .modal-save:active{transform:scale(.97)}
+.swap-search-wrap{padding:0 20px 10px}
+.swap-search{width:100%;height:42px;box-sizing:border-box;padding:0 12px;border:1px solid var(--t-bdr2);background:var(--t-card);color:var(--white);font-size:15px;font-family:var(--t-mono);-webkit-appearance:none;border-radius:0}
+.swap-search:focus{outline:none;border-color:var(--t-acc)}
+.swap-search::placeholder{color:var(--t-mid)}
+.swap-item.custom{border-style:dashed;border-color:var(--gold)}
+.swap-item.custom .swap-item-name{color:var(--gold)}
+.swap-empty{padding:14px 4px;font-size:11px;color:var(--t-mid);font-family:var(--t-mono);text-align:center}
 .swap-filter{display:flex;gap:6px;padding:0 20px 12px;flex-wrap:wrap}
 .swap-filter-btn{padding:6px 12px;border:1px solid var(--t-bdr2);background:var(--t-card);color:var(--t-mid);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--t-mono)}
 .swap-filter-btn.active{background:var(--t-acc);border-color:var(--t-acc);color:var(--white)}
@@ -659,6 +666,30 @@ html.theme-mentzer .fo-nav.next{box-shadow:0 0 18px rgba(255,0,144,.5)}
 html.theme-mentzer .fo-swap{text-shadow:0 0 8px rgba(255,0,144,.5)}
 html.theme-mentzer .fo-add.rp{text-shadow:0 0 8px rgba(255,140,26,.5)}
 html.theme-mentzer .rp-ring{text-shadow:0 0 22px rgba(255,140,26,.55)}
+
+/* ── v6.7.0 ─────────────────────────────────────── */
+.fo-state{flex:1;padding:11px;text-align:center;font-family:var(--t-mono);font-size:10px;
+  font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t-dim);
+  border:1px solid var(--t-bdr2)}
+.fo-state.done{color:#00f5ff;border-color:rgba(0,245,255,.4)}
+html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
+.fo-rest{flex:0 0 46px;padding:11px 0;background:transparent;border:1px solid rgba(255,140,26,.45);
+  color:#FF8C1A;font-size:15px;cursor:pointer}
+.fo-rest:active{background:rgba(255,140,26,.08)}
+.fo-add.wu{color:#00f5ff;border-color:rgba(0,245,255,.4)}
+.fo-uni-row{margin-top:8px}
+.fo-uni{width:100%;padding:10px;background:transparent;border:1px dashed var(--t-bdr2);
+  color:var(--t-dim);font-family:var(--t-mono);font-size:10px;font-weight:700;
+  letter-spacing:1px;cursor:pointer;text-transform:uppercase}
+.fo-uni.on{color:var(--t-acc);border-color:var(--t-acc);border-style:solid}
+.rp-next{margin:14px 0 4px;padding-top:12px;border-top:1px solid var(--t-bdr)}
+.rp-next-lbl{font-family:var(--t-mono);font-size:8px;letter-spacing:2px;color:var(--t-dim)}
+.rp-next-ex{font-family:var(--t-mono);font-size:13px;font-weight:700;color:var(--white);margin-top:4px}
+.rp-next-set{font-family:var(--t-mono);font-size:11px;color:#FF8C1A;margin-top:3px}
+.cyc-splits{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.cyc-split{font-family:var(--t-mono);font-size:8px;letter-spacing:1px;padding:3px 6px;
+  border:1px solid var(--t-bdr2);color:var(--t-dim)}
+.cyc-split.done{color:#00f5ff;border-color:rgba(0,245,255,.4)}
 </style>
 </head>
 <body>
@@ -768,7 +799,7 @@ html.theme-mentzer .rp-ring{text-shadow:0 0 22px rgba(255,140,26,.55)}
       <button class="icon-btn" onclick="showScreen('settings-screen');renderSettings()">⚙️</button>
     </div>
   </div>
-  <div class="meso-strip"><div class="meso-dots" id="meso-dots"></div></div>
+  <div class="meso-strip"><div class="meso-dots" id="meso-dots"></div><div class="cyc-splits" id="cyc-splits"></div></div>
   <div class="scroll">
     <div id="phil-banner"></div>
     <div class="sec" id="home-plan-label">Workouts</div>
@@ -965,6 +996,20 @@ html.theme-mentzer .rp-ring{text-shadow:0 0 22px rgba(255,140,26,.55)}
         </div>
       </div>
     </div>
+    <div class="sec" style="padding:0">Körpergewicht</div>
+    <div class="settings-sec">
+      <div class="settings-row">
+        <div>
+          <div class="sr-lbl">Eigengewicht</div>
+          <div style="font-size:10px;color:var(--t-mid);margin-top:3px;line-height:1.4">Wird bei Dips und Klimmzügen als Last eingetragen, statt eines Platzhalters.</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button onclick="changeBodyWeight(-0.5)" style="background:var(--t-sur);border:1px solid var(--t-bdr);color:var(--light);width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer">−</button>
+          <span class="sr-val" id="bw-setting">—</span>
+          <button onclick="changeBodyWeight(0.5)" style="background:var(--t-sur);border:1px solid var(--t-bdr);color:var(--light);width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer">+</button>
+        </div>
+      </div>
+    </div>
     <div class="sec" style="padding:0">Workout-Modus</div>
     <div class="settings-sec">
       <div class="settings-row" onclick="toggleForceFree()" style="cursor:pointer">
@@ -991,7 +1036,20 @@ html.theme-mentzer .rp-ring{text-shadow:0 0 22px rgba(255,140,26,.55)}
     </div>
     <div class="sec" style="padding:0">Daten</div>
     <div class="settings-sec">
-      <div class="settings-row" onclick="clearDataConfirm()" style="cursor:pointer">
+      <!-- Zweiter Zugang zum Backup. Derselbe Abschnitt sitzt auch am Fuss des
+           Statistik-Screens; beide nutzen dieselbe Datei-Auswahl (#backup-input). -->
+      <div class="settings-row" onclick="downloadBackup()" style="cursor:pointer">
+        <div>
+          <div class="sr-lbl">📥 JSON-Backup herunterladen</div>
+          <div style="font-size:10px;color:var(--t-mid);margin-top:3px;line-height:1.4">Kompletter Verlauf als Datei. Vor jedem App-Update sichern — die Daten liegen nur auf diesem Gerät.</div>
+        </div>
+        <div class="sr-val">›</div>
+      </div>
+      <div class="settings-row" onclick="document.getElementById('backup-input').click()" style="cursor:pointer;border-top:1px solid var(--t-bdr)">
+        <div class="sr-lbl">📤 Backup wiederherstellen</div>
+        <div class="sr-val">›</div>
+      </div>
+      <div class="settings-row" onclick="clearDataConfirm()" style="cursor:pointer;border-top:1px solid var(--t-bdr)">
         <div class="sr-lbl" style="color:var(--t-acc)">Alle Trainingsdaten löschen</div>
         <div class="sr-val">›</div>
       </div>
@@ -1157,8 +1215,25 @@ html.theme-mentzer .rp-ring{text-shadow:0 0 22px rgba(255,140,26,.55)}
   <div class="modal" onclick="event.stopPropagation()" style="padding-bottom:calc(16px + var(--sb))">
     <div class="modal-handle"></div>
     <div class="modal-title">Übung wechseln</div>
+    <div class="swap-search-wrap">
+      <input class="swap-search" id="swap-search" type="search" inputmode="search" autocomplete="off"
+             autocorrect="off" autocapitalize="none" spellcheck="false"
+             placeholder="Suchen oder eigene Übung eintippen" oninput="onSwapSearch()">
+    </div>
     <div class="swap-filter" id="swap-filter"></div>
     <div class="swap-list" id="swap-list"></div>
+  </div>
+</div>
+<!-- Generischer Ja/Nein-Dialog. Ersetzt confirm(), das die iOS-PWA still verschluckt. -->
+<div class="overlay" id="ask-dialog" onclick="askDismiss(event)">
+  <div class="modal" style="padding:24px;text-align:center" onclick="event.stopPropagation()">
+    <div id="ask-icon" style="font-size:28px;margin-bottom:10px">❓</div>
+    <div id="ask-title" style="font-family:var(--t-mono);font-size:15px;font-weight:700;color:var(--white);margin-bottom:8px"></div>
+    <div id="ask-text" style="font-size:12px;color:var(--t-mid);margin-bottom:20px;white-space:pre-line"></div>
+    <div style="display:flex;gap:10px">
+      <button id="ask-no" onclick="askAnswer(false)" style="flex:1;height:46px;border-radius:12px;border:1px solid var(--t-bdr);background:var(--t-card);color:var(--light);font-size:13px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer"></button>
+      <button id="ask-yes" onclick="askAnswer(true)" style="flex:1;height:46px;border-radius:12px;border:none;background:var(--t-acc);color:var(--white);font-size:13px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer"></button>
+    </div>
   </div>
 </div>
 <div class="overlay" id="back-dialog" onclick="backCancel()">
@@ -1229,6 +1304,7 @@ html.theme-mentzer .rp-ring{text-shadow:0 0 22px rgba(255,140,26,.55)}
   <div class="modal" onclick="event.stopPropagation()" style="transform:none;width:auto;max-width:300px;margin:0 auto;border:1px solid #FF8C1A;padding:24px 26px;text-align:center">
     <div class="fw-timer-lbl" id="rp-title" style="color:#FF8C1A">REST-PAUSE</div>
     <div class="rp-ring" id="rp-ring"><span id="rp-count">15</span><span id="rp-unit" style="font-size:20px;color:var(--t-mid)">s</span></div>
+    <div class="rp-next" id="rp-next"></div>
     <div class="rp-durs">
       <button class="rp-dur-btn" data-sec="10" onclick="setRPDuration(10)">10s</button>
       <button class="rp-dur-btn active" data-sec="15" onclick="setRPDuration(15)">15s</button>
@@ -1239,13 +1315,26 @@ html.theme-mentzer .rp-ring{text-shadow:0 0 22px rgba(255,140,26,.55)}
   </div>
 </div>
 
+<div class="overlay" id="meso-done-overlay" style="align-items:center">
+  <div class="modal" onclick="event.stopPropagation()" style="transform:none;width:auto;max-width:320px;margin:0 auto;padding:24px 22px;text-align:center">
+    <div class="fw-timer-lbl" style="color:var(--t-acc)">ZYKLUS ABGESCHLOSSEN</div>
+    <div id="meso-done-txt" style="font-size:13px;color:var(--t-mid);line-height:1.6;margin:14px 0 18px">
+      Sechs volle Durchläufe geschafft. Jetzt ist ein Deload sinnvoll —
+      und ein guter Zeitpunkt, einzelne Übungen zu wechseln.
+    </div>
+    <button class="rp-main-btn" onclick="startNewCycleAndEdit()">Übungen anpassen</button>
+    <button class="rp-main-btn" style="margin-top:8px;background:transparent;border:1px solid var(--t-bdr2);color:var(--t-mid)" onclick="startNewCycle()">Weiter wie bisher</button>
+    <button class="rp-close-btn" onclick="closeMesoDone()">Später</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.6.0";
+var APP_VERSION = "v6.8.0";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -1270,7 +1359,7 @@ function todayStr(){return new Date().toLocaleDateString("de-DE");}
 var DB = {
   "Brust":     {muster:"Upper Push",uebungen:["Flachbankdrücken KH","Schrägbankdrücken KH","Flachbankdrücken LH","Schrägbankdrücken LH","Kabel-Flys","Peck Deck","Dips (Brust)","Brustpresse Maschine","Chest Fly Maschine"]},
   "Schultern": {muster:"Upper Push",uebungen:["Schulterdrücken KH","Militärpress LH","Arnold Press","Seitheben KH","Seitheben Kabel","Seitheben Maschine","Reverse Flys Maschine","Face Pulls Kabel"]},
-  "Trizeps":   {muster:"Upper Push",uebungen:["Trizepsdrücken Kabel (Seil)","Overhead-Trizeps Kabel","Skull Crushers","Close-Grip Bankdrücken","Pushdown V-Griff","Overhead-Extension KH","Dips (Trizeps)"]},
+  "Trizeps":   {muster:"Upper Push",uebungen:["Trizepsdrücken Kabel (Seil)","Trizepsdrücken Kabel einarmig","Overhead-Trizeps Kabel","Skull Crushers","Close-Grip Bankdrücken","Pushdown V-Griff","Overhead-Extension KH","Dips (Trizeps)"]},
   "Rücken":    {muster:"Upper Pull",uebungen:["Latzug breit","Latzug eng (Untergriff)","Seilzug-Rudern","Klimmzüge","Langhantelrudern","Brustgest. Rudern LH","T-Bar Rudern","Rudermaschine","Pullover Maschine"]},
   "Bizeps":    {muster:"Upper Pull",uebungen:["SZ-Curls","LH-Curls","KH-Curls alternierend","Hammercurls","Kabel-Curls","Scott-Curls Maschine","Konzentrationscurls"]},
   "Quadrizeps":{muster:"Lower Push",uebungen:["Beinpresse","Kniebeuge LH","Hack Squat","Beinstrecker Maschine","Bulgarian Split Squat","Front Squat","Ausfallschritte","Goblet Squat"]},
@@ -1289,7 +1378,7 @@ var MUSKEL = {
   "Schulterdrücken KH":"Anteriore & Lat. Deltas","Militärpress LH":"Anteriore & Lat. Deltas",
   "Arnold Press":"Alle 3 Delta-Köpfe","Seitheben KH":"Laterale Deltas","Seitheben Kabel":"Laterale Deltas",
   "Seitheben Maschine":"Laterale Deltas","Reverse Flys Maschine":"Posteriore Deltas","Face Pulls Kabel":"Post. Deltas, Rotatorenmanschette",
-  "Trizepsdrücken Kabel (Seil)":"Trizeps (lat. Kopf)","Overhead-Trizeps Kabel":"Trizeps (langer Kopf)",
+  "Trizepsdrücken Kabel (Seil)":"Trizeps (lat. Kopf)","Trizepsdrücken Kabel einarmig":"Trizeps (lat. Kopf, unilat.)","Overhead-Trizeps Kabel":"Trizeps (langer Kopf)",
   "Skull Crushers":"Trizeps (langer Kopf)","Close-Grip Bankdrücken":"Trizeps gesamt",
   "Pushdown V-Griff":"Trizeps (lat. + med.)","Overhead-Extension KH":"Trizeps (langer Kopf)","Dips (Trizeps)":"Trizeps gesamt",
   "Latzug breit":"Latissimus dorsi","Latzug eng (Untergriff)":"Latissimus + Bizeps",
@@ -1548,12 +1637,12 @@ var PHILOSOPHIES = {
        paare:[
         {slots:[{kat:"Brust",ueb:"Chest Fly Maschine",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"Brust",ueb:"Schrägbankdrücken LH",saetze:JSON.parse(JSON.stringify(S_SKY_SS))}]},
         {slots:[{kat:"Rücken",ueb:"Pullover Maschine",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"Rücken",ueb:"Latzug eng (Untergriff)",saetze:JSON.parse(JSON.stringify(S_SKY_SS))}]},
-        {slots:[{kat:"Hamstrings",ueb:"Kreuzheben LH",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"— (leer)",ueb:"— (leer)",saetze:[]}]}
+        {slots:[{kat:"Core",ueb:"Hängendes Beinheben",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"— (leer)",ueb:"— (leer)",saetze:[]}]}
        ]},
-      {id:"SKY_B",name:"Legs",icon:"🦵",sub:"Pre-Exhaust · Kniebeugen · Waden",color:"#00C8AA",mode:"free",
+      {id:"SKY_B",name:"Legs",icon:"🦵",sub:"Pre-Exhaust · Kniebeugen · RDL · Waden",color:"#00C8AA",mode:"free",
        paare:[
         {slots:[{kat:"Quadrizeps",ueb:"Beinstrecker Maschine",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"Quadrizeps",ueb:"Kniebeuge LH",saetze:JSON.parse(JSON.stringify(S_SKY_SS))}]},
-        {slots:[{kat:"Hamstrings",ueb:"Beinbeuger sitzend",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"— (leer)",ueb:"— (leer)",saetze:[]}]},
+        {slots:[{kat:"Hamstrings",ueb:"Beinbeuger sitzend",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"Hamstrings",ueb:"Rumänisches Kreuzheben (RDL)",saetze:JSON.parse(JSON.stringify(S_SKY))}]},
         {slots:[{kat:"Waden",ueb:"Wadenheben stehend",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"— (leer)",ueb:"— (leer)",saetze:[]}]}
        ]},
       {id:"SKY_C",name:"Shoulders & Arms",icon:"🏋️",sub:"DB Laterals SS · Curls · Dips",color:"#4A9EFF",mode:"free",
@@ -1577,7 +1666,7 @@ var MOD_ICON = {Joggen:"🏃",Fahrrad:"🚴",Schwimmen:"🏊",Rucking:"🎒"};
 // ══════════════════════════════════
 // STATE
 // ══════════════════════════════════
-var state = {philId:null,plans:null,defaultTimer:120,history:[],mesoWeek:1,forceFree:false,autoPause:true,repCeiling:REP_CEILING_DEFAULT};
+var state = {philId:null,plans:null,defaultTimer:120,history:[],mesoWeek:1,forceFree:false,autoPause:true,repCeiling:REP_CEILING_DEFAULT,bodyWeight:null,cycleStart:0};
 var workout = {plan:null,pairIdx:0,satzIdx:0,data:{},swapData:{},startTime:null};
 var timer = {endTime:0,total:120,remaining:120,interval:null,paused:false,pausedAt:0};
 var cardioState = {protoId:"zone2",modality:"Joggen",duration:45};
@@ -1595,6 +1684,8 @@ function saveState(){
     localStorage.setItem("sw51_timer",String(state.defaultTimer));
     localStorage.setItem("sw51_history",JSON.stringify(state.history));
     localStorage.setItem("sw51_meso",String(state.mesoWeek));
+    localStorage.setItem("sw51_bw",String(state.bodyWeight||""));
+    localStorage.setItem("sw51_cyc",String(state.cycleStart||0));
     localStorage.setItem("sw51_forcefree",state.forceFree?"1":"0");
     localStorage.setItem("sw51_autopause",state.autoPause?"1":"0");
     localStorage.setItem("sw51_repceiling",String(state.repCeiling||REP_CEILING_DEFAULT));
@@ -1614,7 +1705,90 @@ function loadState(){
     state.repCeiling = parseInt(localStorage.getItem("sw51_repceiling"),10)||REP_CEILING_DEFAULT;
     var m=localStorage.getItem("sw51_meso");
     state.mesoWeek=m?parseInt(m):1;
+    var bw=localStorage.getItem("sw51_bw"); state.bodyWeight=bw?parseFloat(bw):null;
+    var cy=localStorage.getItem("sw51_cyc"); state.cycleStart=cy?parseInt(cy):0;
+    migrateKreuzhebenZuRDL();
   }catch(e){}
+}
+
+// ── Migration v6.8.0 ────────────────────────────────────
+// Im Plan stand "Kreuzheben LH", ausgefuehrt wurde tatsaechlich das RDL.
+// Die Historie wird deshalb einmalig umbenannt — die Gewichte bleiben, nur der
+// Name wandert mit. Ohne das findet getLastData() die Vorwerte nicht mehr,
+// sobald der Slot auf RDL steht (Zuordnung laeuft ueber slotMeta, nicht ueber
+// die Position). Der Merker verhindert, dass ein spaeter bewusst eingetragenes
+// Kreuzheben LH ebenfalls umbenannt wird.
+var MIG_RDL_KEY="sw51_mig_rdl";
+function migrateKreuzhebenZuRDL(){
+  if(localStorage.getItem(MIG_RDL_KEY)==="1") return 0;
+  var n=renameExerciseInHistory("Kreuzheben LH","Rumänisches Kreuzheben (RDL)");
+  migratePlanRDL();
+  try{ localStorage.setItem(MIG_RDL_KEY,"1"); }catch(e){}
+  // Sofort zurueckschreiben: Der Merker steht schon, ohne Speichern waere die
+  // Umbenennung beim naechsten Start weg und wuerde nicht noch einmal laufen.
+  saveState();
+  return n;
+}
+// Der Plan liegt gespeichert im localStorage — die neue Fassung in PHILOSOPHIES
+// erreicht ein bestehendes Setup sonst nie. Deshalb hier dieselbe Umstellung
+// noch einmal auf den gespeicherten Plaenen: RDL wandert zu Legs, bei
+// Chest & Back nimmt das Beinheben den frei werdenden Platz ein.
+function migratePlanRDL(){
+  if(!state.plans) return;
+  state.plans.forEach(function(plan){
+    if(plan.id==="SKY_A"){
+      plan.paare.forEach(function(paar){
+        paar.slots.forEach(function(slot){
+          if(slot.ueb==="Kreuzheben LH"){ slot.kat="Core"; slot.ueb="Hängendes Beinheben"; }
+        });
+      });
+    }
+    if(plan.id==="SKY_B"){
+      var hatRDL=false;
+      plan.paare.forEach(function(paar){
+        paar.slots.forEach(function(slot){
+          if(slot.ueb==="Rumänisches Kreuzheben (RDL)") hatRDL=true;
+        });
+      });
+      if(hatRDL) return;
+      // Neben den Beinbeuger, das entspricht der Einheit vom 6.8.
+      for(var i=0;i<plan.paare.length;i++){
+        var slots=plan.paare[i].slots;
+        var beinbeuger=slots.some(function(s){return s.ueb==="Beinbeuger sitzend";});
+        if(!beinbeuger) continue;
+        for(var j=0;j<slots.length;j++){
+          if(slots[j].ueb==="— (leer)"){
+            slots[j].kat="Hamstrings";
+            slots[j].ueb="Rumänisches Kreuzheben (RDL)";
+            slots[j].saetze=JSON.parse(JSON.stringify(S_SKY));
+            return;
+          }
+        }
+      }
+    }
+  });
+}
+// Benennt eine Uebung in der gesamten Historie um. slotMeta ist massgeblich,
+// der Name steckt aber auch in den einzelnen Saetzen.
+function renameExerciseInHistory(alt,neu){
+  var n=0;
+  (state.history||[]).forEach(function(h){
+    if(h.slotMeta){
+      Object.keys(h.slotMeta).forEach(function(k){
+        if(h.slotMeta[k]===alt){ h.slotMeta[k]=neu; n++; }
+      });
+    }
+    // In sets stehen neben den Satz-Arrays auch Notizen als Text
+    // (Schluessel "0_0_0_note") — die duerfen hier nicht mitlaufen.
+    if(h.sets){
+      Object.keys(h.sets).forEach(function(k){
+        var arr=h.sets[k];
+        if(!Array.isArray(arr)) return;
+        arr.forEach(function(s){ if(s&&s.name===alt) s.name=neu; });
+      });
+    }
+  });
+  return n;
 }
 
 // ── Active workout autosave ─────────────────────────────
@@ -1926,8 +2100,9 @@ function renderHome(){
 }
 
 function renderMesoStrip(){
-  var w=state.mesoWeek;
-  document.getElementById("meso-badge-txt").textContent="W"+w;
+  var cyc=cycleProgress(), w=cyc.runde;
+  var badge=document.getElementById("meso-badge-txt");
+  if(badge) badge.textContent="Runde "+w+"/"+MESO_LENGTH;
   var el=document.getElementById("meso-dots"),html="";
   for(var i=1;i<=MESO_LENGTH;i++){
     var cls="meso-dot";
@@ -1935,6 +2110,16 @@ function renderMesoStrip(){
     html+='<div class="'+cls+'"></div>';
   }
   el.innerHTML=html;
+  // Welche Splits fehlen in der laufenden Runde noch?
+  var sp=document.getElementById("cyc-splits");
+  if(sp){
+    var h2="";
+    (state.plans||[]).forEach(function(pl){
+      var fertig=cyc.fertig.indexOf(pl.id)>=0;
+      h2+='<div class="cyc-split'+(fertig?" done":"")+'">'+(fertig?"✓ ":"")+esc(pl.name)+'</div>';
+    });
+    sp.innerHTML=h2;
+  }
 }
 
 function renderPlanList(){
@@ -2042,7 +2227,7 @@ function renderStatsKPIs(){
 
   el.innerHTML=
     '<div class="done-stat"><div class="done-stat-val">'+ws.length+'</div><div class="done-stat-lbl">Workouts</div></div>'+
-    '<div class="done-stat"><div class="done-stat-val">'+(state.mesoWeek||1)+'</div><div class="done-stat-lbl">Meso-Woche</div></div>'+
+    '<div class="done-stat"><div class="done-stat-val">'+cycleProgress().runde+'</div><div class="done-stat-lbl">Runde</div></div>'+
     '<div class="done-stat"><div class="done-stat-val">'+Math.round(hitOrWS/1000*10)/10+'<span style="font-size:11px"> t</span></div><div class="done-stat-lbl">'+hitLbl+'</div></div>'+
     '<div class="done-stat" style="grid-column:1/-1"><div class="done-stat-val" style="font-size:14px">'+lastDate+'</div><div class="done-stat-lbl">Letzte Einheit</div></div>';
 }
@@ -2258,12 +2443,12 @@ function renderFreeStats(){
         total++;
         var key=pi+"_"+si+"_"+i;
         var d=workout.data[key];
-        if(d&&d.done) done++;
+        if(isSetDone(d)) done++;
       });
     });
   });
   document.getElementById("fw-stats").textContent =
-    "W"+state.mesoWeek+" · "+done+"/"+total+" Sätze";
+    "Runde "+cycleProgress().runde+"/"+MESO_LENGTH+" · "+done+"/"+total+" Sätze";
   var ov=document.getElementById("fw-volbar");
   if(ov) ov.innerHTML=buildVolumeHtml();
   var pct = total>0 ? (done/total*100) : 0;
@@ -2292,7 +2477,7 @@ function renderFreeExercise(pair, pi, slot, si, exNum){
   var done=0, total=sets.length, started=false;
   for(var i=0;i<total;i++){
     var d=workout.data[pi+"_"+si+"_"+i];
-    if(d&&d.done) done++;
+    if(isSetDone(d)) done++;
     if(d&&(d.kg||d.wdh)&&!d.pre) started=true;
   }
   var allDone = done===total && total>0;
@@ -2331,7 +2516,7 @@ function renderFreeExercise(pair, pi, slot, si, exNum){
     var lbl = type==="wu"?"WU":type==="hit"?"HIT":type==="bo"?"BO":"WS";
     if(type==="rp"){ rpCount++; lbl="RP"+rpCount; }
     var val = (d.kg&&d.wdh&&!d.pre) ? (d.kg+"×"+d.wdh) : "–";
-    html += '<div class="fw-chip '+type+(d.done?" done":"")+'">';
+    html += '<div class="fw-chip '+type+(isSetDone(d)?" done":"")+'">';
     html += '<span class="fw-chip-t">'+lbl+'</span>';
     html += '<span class="fw-chip-v">'+val+'</span>';
     html += '</div>';
@@ -2406,7 +2591,11 @@ function calcEffectiveVolume(plan, data){
       slot.saetze.forEach(function(satz,i){
         if(!isEffectiveType(satz.type)) return;
         var d=data[pi+"_"+si+"_"+i];
-        if(d&&d.kg&&d.wdh&&!d.pre){ vol+=parseFloat(d.kg)*parseInt(d.wdh,10); sets++; }
+        if(d&&d.kg&&d.wdh&&!d.pre){
+          var v=parseFloat(d.kg)*parseInt(d.wdh,10);
+          if(slot.unilat) v*=2;          // einarmig: Wert gilt je Seite
+          vol+=v; sets++;
+        }
       });
     });
   });
@@ -2422,10 +2611,64 @@ function historyEffectiveVolume(entry){
     arr.forEach(function(row){
       if(!row||!row.kg||!row.wdh) return;
       if(!isEffectiveType(row.type)) return;
-      vol+=parseFloat(row.kg)*parseInt(row.wdh,10); sets++;
+      var v=parseFloat(row.kg)*parseInt(row.wdh,10);
+      // Einarmig zaehlt beide Seiten — sonst faellt derselbe Satz hier halb so
+      // gross aus wie waehrend des Trainings und wie in entry.totalVol.
+      if(row.uni) v*=2;
+      vol+=v; sets++;
     });
   }
   return {vol:Math.round(vol), sets:sets};
+}
+// ══════════════════════════════════
+// MESOZYKLUS NACH DURCHLAEUFEN
+// Eine Runde ist voll, wenn jeder Plan der Philosophie einmal absolviert wurde.
+// Kalenderwochen passen nicht zu Heavy Duty: der Abstand zwischen den Einheiten
+// richtet sich nach der Regeneration, nicht nach dem Wochentag.
+// ══════════════════════════════════
+// Ab hier wird gezaehlt — aeltere Einheiten bleiben in der Historie, zaehlen
+// aber nicht in den laufenden Zyklus (sonst startet man sofort im Deload).
+function cycleStartIndex(){
+  if(state.cycleStart!==undefined && state.cycleStart!==null) return state.cycleStart;
+  return 0;
+}
+// Liefert {runde, gesamt, offen:[planId], fertig:[planId]} fuer den laufenden Zyklus
+function cycleProgress(){
+  var plans=(state.plans||[]).map(function(p){return p.id;});
+  if(!plans.length) return {runde:1, gesamt:MESO_LENGTH, offen:[], fertig:[], planNames:{}};
+  var names={};
+  (state.plans||[]).forEach(function(p){names[p.id]=p.name;});
+  var hist=(state.history||[]).filter(function(h){return h.type!=="cardio";}).slice(cycleStartIndex());
+  // Runden fuellen: ein Plan zaehlt erst wieder, wenn die laufende Runde ihn noch nicht hat.
+  // Eine Runde zaehlt erst, wenn WIRKLICH jeder Plan drin war. Wird ein Plan
+  // zweimal gemacht, bevor die Runde voll ist, bleibt er einfach markiert —
+  // sonst wuerde eine abgebrochene Runde faelschlich als volle gezaehlt.
+  var voll=0, cur={};
+  hist.forEach(function(h){
+    if(plans.indexOf(h.planId)<0) return;
+    cur[h.planId]=true;
+    if(Object.keys(cur).length===plans.length){ voll++; cur={}; }
+  });
+  var offen=plans.filter(function(id){return !cur[id];});
+  var fertig=plans.filter(function(id){return !!cur[id];});
+  return {runde:Math.min(voll+1,MESO_LENGTH), vollRunden:voll, gesamt:MESO_LENGTH,
+          offen:offen, fertig:fertig, planNames:names};
+}
+// Zyklus hier neu beginnen lassen (nach Deload oder beim Import von Altdaten)
+function resetCycleHere(){
+  state.cycleStart=(state.history||[]).filter(function(h){return h.type!=="cardio";}).length;
+  state.mesoWeek=1;
+  saveState();
+}
+
+// Ein Satz gilt als erledigt, sobald Gewicht UND Wiederholungen eingetragen sind.
+// Vorbelegte Werte (pre) zaehlen nicht — die sind nur ein Vorschlag.
+// d.done bleibt als manuelle Uebersteuerung erhalten (Altdaten + Haken-Button).
+function isSetDone(d){
+  if(!d) return false;
+  if(d.done===true) return true;
+  if(d.pre) return false;
+  return !!(d.kg && d.wdh);
 }
 // Letzte abgeschlossene Session desselben Plans
 function lastSessionForPlan(planId){
@@ -2493,12 +2736,47 @@ function focusStep(dir){
   if(dir>0 && state.autoPause!==false) startFocusPause();
 }
 
+// Zeigt waehrend der Pause an, was als naechstes ansteht — inklusive Zielgewicht.
+function renderPauseNext(){
+  var el=document.getElementById("rp-next");
+  if(!el) return;
+  el.innerHTML="";
+  if(!focusCtx||!workout||!workout.plan) return;
+  var slot=workout.plan.paare[focusCtx.pi].slots[focusCtx.si];
+  if(!slot||!slot.ueb) return;
+  // Erster noch nicht erledigter Satz dieser Uebung ist das naechste Ziel.
+  var target=null, tIdx=0;
+  for(var i=0;i<slot.saetze.length;i++){
+    var d=workout.data[focusCtx.pi+"_"+focusCtx.si+"_"+i];
+    if(!isSetDone(d)){ target=slot.saetze[i]; tIdx=i; break; }
+  }
+  var html='<div class="rp-next-lbl">ALS NÄCHSTES</div>';
+  html+='<div class="rp-next-ex">'+esc(slot.ueb)+(slot.unilat?' · je Seite':'')+'</div>';
+  if(target){
+    var d=workout.data[focusCtx.pi+"_"+focusCtx.si+"_"+tIdx]||{};
+    var prev=getLastData(workout.plan.id, focusCtx.pi, focusCtx.si, slot.ueb);
+    var goal=getProgressionGoal(slot, prev, focusCtx.pi, focusCtx.si);
+    var kg = d.kg || (goal&&goal.kg) || "";
+    var wdh= d.wdh|| (goal&&goal.wdh)|| target.wdh || "";
+    var nm = target.name||"Satz";
+    html+='<div class="rp-next-set">'+esc(nm)+(kg?' · '+kg+' kg':'')+(wdh?' × '+wdh:'')+'</div>';
+  }
+  el.innerHTML=html;
+}
+
+// Pause per Hand starten (Button am Satz) — nutzt dieselbe Anzeige wie die Automatik.
+function startManualPause(pi,si){
+  if(pi!==undefined&&si!==undefined) focusCtx={pi:pi,si:si};
+  startFocusPause();
+}
+
 // Automatische Satzpause zwischen den Uebungen (Standarddauer aus den Einstellungen)
 function startFocusPause(){
   var sec = state.defaultTimer||120;
   rpTimer.duration = sec;
   document.getElementById("rp-overlay").classList.add("open");
   document.getElementById("rp-title").textContent = "SATZPAUSE";
+  renderPauseNext();
   var btns=document.querySelectorAll(".rp-dur-btn");
   for(var i=0;i<btns.length;i++) btns[i].classList.remove("active");
   stopRPTimer();
@@ -2520,9 +2798,26 @@ function focusDone(){
 
 // Belegt leere Eingabefelder mit den Zielwerten aus dem letzten Training vor.
 // Markierung `pre:true` => noch nicht bestaetigt, zaehlt nirgends mit.
+// Uebungen, die am eigenen Koerpergewicht stattfinden. Ohne Zusatzgewicht
+// stand hier frueher ein Platzhalter — das verfaelscht Volumen und Bestwerte.
+var BODYWEIGHT_EX = ["Dips (Trizeps)","Dips (Brust)","Klimmzüge","Liegestütze"];
+function isBodyweight(ueb){ return BODYWEIGHT_EX.indexOf(ueb)>=0; }
+
 function prefillSlot(pi, si){
   var slot=workout.plan.paare[pi].slots[si];
   var prev=getLastData(workout.plan.id, pi, si, slot.ueb);
+  // Eigengewichtsuebungen: Koerpergewicht als Startwert, auch ohne Historie
+  if(isBodyweight(slot.ueb) && state.bodyWeight){
+    slot.saetze.forEach(function(satz,i){
+      var key=pi+"_"+si+"_"+i;
+      var d=workout.data[key];
+      if(d && (d.kg||d.wdh) && !d.pre) return;
+      var t=prev?getSetTarget(slot, prev, i):null;
+      workout.data[key]={kg:state.bodyWeight, wdh:(t?t.wdh:""), done:false, pre:true};
+    });
+    saveActiveWorkout();
+    return;
+  }
   if(!prev) return;
   slot.saetze.forEach(function(satz,i){
     var key=pi+"_"+si+"_"+i;
@@ -2597,7 +2892,7 @@ function renderFocus(){
     var col=satzTypeColor(satz);
 
 
-    html+='<div class="fo-set'+(d.done?" done":"")+'" style="--sc:'+col+'">';
+    html+='<div class="fo-set'+(isSetDone(d)?" done":"")+'" style="--sc:'+col+'">';
     html+='<div class="fo-set-hdr">';
     html+='<span class="fo-set-lbl">'+lbl+'</span>';
     html+='<span class="fo-set-target">'+esc(satz.wdh||"")+' Wdh</span>';
@@ -2615,16 +2910,25 @@ function renderFocus(){
     html+='</div></div>';
     html+='</div>';
     html+='<div class="fo-set-actions">';
-    html+='<button class="fo-check'+(d.done?" done":"")+'" onclick="toggleSetDone(\''+key+'\')">'+(d.done?"✓ Erledigt":"Als erledigt markieren")+'</button>';
+    // Kein Erledigt-Button mehr: ein Satz mit Gewicht und Wdh gilt automatisch als erledigt.
+    var dn=isSetDone(d);
+    html+='<div class="fo-state'+(dn?" done":"")+'">'+(dn?"✓ Erledigt":"Offen")+'</div>';
+    html+='<button class="fo-rest" onclick="startManualPause('+pi+','+si+')" title="Pause starten">⏱</button>';
     html+='<button class="fo-del" onclick="deleteSet('+pi+','+si+','+i+')" title="Satz löschen">×</button>';
     html+='</div>';
     html+='</div>';
   });
 
   html+='<div class="fo-add-row">';
+  html+='<button class="fo-add wu" onclick="addWarmUp('+pi+','+si+')">+ Warm-Up</button>';
   html+='<button class="fo-add" onclick="addSetToExercise('+pi+','+si+')">+ Satz</button>';
   if(slotHasHIT(slot)) html+='<button class="fo-add rp" onclick="addRestPause('+pi+','+si+')">+ Rest-Pause</button>';
   html+='<button class="fo-add timer" onclick="openRestPauseTimer('+pi+','+si+')" title="Kurzer Rest-Pause-Timer">⏱</button>';
+  html+='</div>';
+  // Einarmig: eine Zeile, Werte gelten je Seite — Volumen wird verdoppelt.
+  html+='<div class="fo-uni-row">';
+  html+='<button class="fo-uni'+(slot.unilat?" on":"")+'" onclick="toggleUnilateral('+pi+','+si+')">';
+  html+=(slot.unilat?"☑":"☐")+' EINARMIG · WERTE JE SEITE</button>';
   html+='</div>';
 
   document.getElementById("focus-body").innerHTML=html;
@@ -2859,6 +3163,32 @@ function addSetToExercise(pi, si){
   if(focusCtx) renderFocus(); else renderFreeWorkout();
 }
 
+// Zusaetzlichen Warm-Up-Satz einfuegen — direkt hinter die vorhandenen Warm-Ups,
+// damit die Reihenfolge Aufwaermen -> Arbeitssatz erhalten bleibt.
+function addWarmUp(pi, si){
+  var slot = workout.plan.paare[pi].slots[si];
+  var pos = 0;
+  while(pos < slot.saetze.length && slot.saetze[pos].wu) pos++;
+  slot.saetze.splice(pos, 0, mkWU());
+  // Eingetragene Werte hinter der Einfuegestelle um eins nach hinten schieben
+  for(var i = slot.saetze.length-1; i > pos; i--){
+    var from = pi+"_"+si+"_"+(i-1), to = pi+"_"+si+"_"+i;
+    if(workout.data[from]){ workout.data[to] = workout.data[from]; delete workout.data[from]; }
+    else delete workout.data[to];
+  }
+  saveActiveWorkout();
+  if(focusCtx) renderFocus(); else renderFreeWorkout();
+}
+
+// Einarmige Ausfuehrung: Werte gelten je Seite, Volumen zaehlt doppelt.
+function toggleUnilateral(pi, si){
+  var slot = workout.plan.paare[pi].slots[si];
+  slot.unilat = !slot.unilat;
+  saveActiveWorkout();
+  if(focusCtx) renderFocus(); else renderFreeWorkout();
+  showToast(slot.unilat ? "Einarmig — Werte gelten je Seite" : "Beidseitig");
+}
+
 function deleteSet(pi, si, i){
   var slot = workout.plan.paare[pi].slots[si];
   if(slot.saetze.length <= 1){
@@ -2885,17 +3215,18 @@ function deleteSet(pi, si, i){
 
 function freeExMenu(pi, si){
   var slot = workout.plan.paare[pi].slots[si];
-  if(!confirm('Übung "'+slot.ueb+'" entfernen?')) return;
-  // Remove the slot (free mode: each pair has just one active slot)
-  workout.plan.paare[pi].slots[si].kat = "— (leer)";
-  workout.plan.paare[pi].slots[si].ueb = "— (leer)";
-  workout.plan.paare[pi].slots[si].saetze = [];
-  // Drop data for this slot
-  Object.keys(workout.data).forEach(function(k){
-    if(k.indexOf(pi+"_"+si+"_")===0) delete workout.data[k];
-  });
-  saveActiveWorkout();
-  renderFreeWorkout();
+  askConfirm("Übung entfernen?", slot.ueb, function(){
+    // Remove the slot (free mode: each pair has just one active slot)
+    workout.plan.paare[pi].slots[si].kat = "— (leer)";
+    workout.plan.paare[pi].slots[si].ueb = "— (leer)";
+    workout.plan.paare[pi].slots[si].saetze = [];
+    // Drop data for this slot
+    Object.keys(workout.data).forEach(function(k){
+      if(k.indexOf(pi+"_"+si+"_")===0) delete workout.data[k];
+    });
+    saveActiveWorkout();
+    renderFreeWorkout();
+  }, {icon:"🗑", yes:"Entfernen", no:"Behalten"});
 }
 
 // ── Exercise Picker ─────────────────────────────
@@ -3037,9 +3368,14 @@ function downloadBackup(){
 
 function restoreBackup(ev){
   var f=ev.target.files&&ev.target.files[0];if(!f) return;
-  if(!confirm("Aktuelle Daten überschreiben? Es wird vorher ein Backup erstellt.")){
-    ev.target.value="";return;
-  }
+  askConfirm(
+    "Aktuelle Daten überschreiben?",
+    "Vorher wird ein Wiederherstellungspunkt angelegt.",
+    function(){ doRestoreBackup(ev,f); },
+    {icon:"⚠️", yes:"Überschreiben", no:"Abbrechen", onNo:function(){ ev.target.value=""; }}
+  );
+}
+function doRestoreBackup(ev,f){
   // safety: snapshot current state to localStorage under a recovery key
   try{localStorage.setItem("sky_state_pre_restore",JSON.stringify(state));}catch(e){}
   var reader=new FileReader();
@@ -3053,6 +3389,10 @@ function restoreBackup(ev){
       if(!state.history) state.history=[];
       if(!state.plans) state.plans=[];
       if(!state.mesoWeek) state.mesoWeek=1;
+      // Ein Backup von vor v6.8.0 bringt "Kreuzheben LH" zurueck. Die Umstellung
+      // wird deshalb auf den eingespielten Daten erneut angewendet.
+      renameExerciseInHistory("Kreuzheben LH","Rumänisches Kreuzheben (RDL)");
+      migratePlanRDL();
       saveState();
       showToast("Backup wiederhergestellt");
       renderStats();renderHome();
@@ -3530,31 +3870,38 @@ function goBackSatz(){
 }
 
 function getLastData(planId,pairIdx,slotIdx,exerciseName){
-  // Returns array of {kg,wdh,wu} for all sätze of THIS exercise, from the most recent session.
-  // Looks across ALL plans (so a swapped-in exercise still finds its history).
-  // Falls back to position-based lookup if exerciseName is missing (legacy).
+  // Liefert alle Saetze DIESER Uebung aus der juengsten passenden Einheit.
+  // Wichtig: dieselbe Uebung kann in mehreren Plaenen vorkommen (z.B. Latzug am
+  // Back-Day mit mehr Gewicht als am Arms-Day). Deshalb zuerst NUR im selben Plan
+  // suchen; erst wenn dort nichts liegt, planuebergreifend (fuer getauschte Uebungen).
+  if(exerciseName){
+    var hit=findLastByName(exerciseName, planId);      // 1. Wahl: gleicher Plan
+    if(hit) return hit;
+    hit=findLastByName(exerciseName, null);            // 2. Wahl: irgendein Plan
+    if(hit) return hit;
+  }
+  return getLastDataByPosition(planId,pairIdx,slotIdx);
+}
+
+// Juengste Einheit mit dieser Uebung. onlyPlan=null durchsucht alle Plaene.
+function findLastByName(exerciseName, onlyPlan){
+  for(var i=state.history.length-1;i>=0;i--){
+    var h=state.history[i];
+    if(!h.sets||!h.slotMeta) continue;
+    if(onlyPlan && h.planId!==onlyPlan) continue;
+    for(var k in h.slotMeta){
+      if(h.slotMeta[k]===exerciseName && h.sets[k] && h.sets[k].some(function(s){return s;})){
+        return h.sets[k];
+      }
+    }
+  }
+  return null;
+}
+
+function getLastDataByPosition(planId,pairIdx,slotIdx){
   for(var i=state.history.length-1;i>=0;i--){
     var h=state.history[i];
     if(!h.sets) continue;
-
-    // First try: find by exercise name in this entry's plan/swap data
-    if(exerciseName){
-      // Each history entry stores `slotMeta` with the exercise name per slot key.
-      // If not present, fall back to comparing against the plan that was logged.
-      if(h.slotMeta){
-        for(var k in h.slotMeta){
-          if(h.slotMeta[k]===exerciseName && h.sets[k] && h.sets[k].some(function(s){return s;})){
-            return h.sets[k];
-          }
-        }
-      } else if(h.planId===planId){
-        // Legacy entries without slotMeta: at least limit to same plan + same slot
-        var key=pairIdx+"_"+slotIdx;
-        if(h.sets[key]&&h.sets[key].some(function(s){return s;})) return h.sets[key];
-      }
-      continue;
-    }
-
     // No name given — old behaviour (same-plan, same-position)
     if(h.planId===planId){
       var k2=pairIdx+"_"+slotIdx;
@@ -3592,8 +3939,24 @@ function openSwap(pairIdx,slotIdx){
   var fHtml='<button class="swap-filter-btn'+(swapCtx.filterMuster?"":" active")+'" onclick="setSwapFilter(null)">Alle</button>';
   BEWEGUNGSMUSTER.forEach(function(m){fHtml+='<button class="swap-filter-btn'+(swapCtx.filterMuster===m?" active":"")+'" onclick="setSwapFilter(\''+m+'\')">'+m+'</button>';});
   fEl.innerHTML=fHtml;
+  swapCtx.q="";
+  var sEl=document.getElementById("swap-search");
+  if(sEl) sEl.value="";
   renderSwapList(slot.kat);
   document.getElementById("swap-modal").classList.add("open");
+}
+// Suchfeld: filtert live über Übungsname, Muskel und Kategorie.
+function onSwapSearch(){
+  var sEl=document.getElementById("swap-search");
+  swapCtx.q=sEl?sEl.value:"";
+  renderSwapList(workout.plan.paare[swapCtx.pairIdx].slots[swapCtx.slotIdx].kat);
+}
+// Umlaut-tolerant. Beide Seiten laufen durch dieselbe Normalisierung, deshalb
+// findet "rucken" wie auch "ruecken" die Übungen unter "Rücken".
+function swapNorm(s){
+  return String(s||"").toLowerCase()
+    .replace(/ä/g,"a").replace(/ö/g,"o").replace(/ü/g,"u").replace(/ß/g,"ss")
+    .replace(/ae/g,"a").replace(/oe/g,"o").replace(/ue/g,"u");
 }
 function setSwapFilter(muster){
   swapCtx.filterMuster=muster;
@@ -3603,20 +3966,43 @@ function setSwapFilter(muster){
 }
 function renderSwapList(currentKat){
   var el=document.getElementById("swap-list"),slot=workout.plan.paare[swapCtx.pairIdx].slots[swapCtx.slotIdx],html="";
+  var raw=(swapCtx.q||"").trim(), q=swapNorm(raw), treffer=0, exakt=false;
   ALL_KAT.forEach(function(kat){
     if(kat==="— (leer)") return;
     var katData=DB[kat];
     if(swapCtx.filterMuster&&katData.muster!==swapCtx.filterMuster) return;
     katData.uebungen.forEach(function(ueb){
-      var isCur=(kat===slot.kat&&ueb===slot.ueb);
       var muskel=MUSKEL[ueb]||kat;
+      // Suche greift über Übungsname, Muskel und Kategorie
+      if(q&&swapNorm(ueb+" "+muskel+" "+kat).indexOf(q)<0) return;
+      if(q&&swapNorm(ueb)===q) exakt=true;
+      treffer++;
+      var isCur=(kat===slot.kat&&ueb===slot.ueb);
       html+='<div class="swap-item'+(isCur?" selected":"")+'" onclick="selectSwap(\''+kat.replace(/'/g,"\\'")+'\',\''+ueb.replace(/'/g,"\\'")+'\')">'+
         '<div class="swap-item-name">'+ueb+'</div>'+
         '<div class="swap-item-mus">'+muskel+'</div>'+
         '<div class="swap-item-pat" style="color:'+getMusterColor(katData.muster)+'">'+kat+' · '+katData.muster+'</div></div>';
     });
   });
+  // Freie Eingabe: alles, was nicht im Katalog steht, lässt sich direkt übernehmen.
+  // Die Übung landet in der Kategorie des aktuellen Slots, damit Muster und
+  // Historien-Zuordnung stimmig bleiben.
+  if(raw&&!exakt){
+    html+='<div class="swap-item custom" onclick="selectSwapCustom()">'+
+      '<div class="swap-item-name">+ "'+esc(raw)+'" übernehmen</div>'+
+      '<div class="swap-item-mus">eigene Übung, nicht im Katalog</div>'+
+      '<div class="swap-item-pat" style="color:var(--gold)">'+esc(slot.kat||"—")+'</div></div>';
+  }
+  if(!treffer&&!raw) html+='<div class="swap-empty">Keine Übung in diesem Bewegungsmuster.</div>';
   el.innerHTML=html;
+}
+// Übernimmt den eingetippten Text als Übungsname für den aktuellen Slot.
+function selectSwapCustom(){
+  var sEl=document.getElementById("swap-search");
+  var name=sEl?sEl.value.trim():"";
+  if(!name) return;
+  var slot=workout.plan.paare[swapCtx.pairIdx].slots[swapCtx.slotIdx];
+  selectSwap(slot.kat||"— (leer)", name);
 }
 function getMusterColor(m){
   if(m==="Upper Push") return "var(--acc)";if(m==="Upper Pull") return "var(--acc3)";
@@ -3977,9 +4363,11 @@ function finishWorkout(){
         var d=workout.data[key];
         if(d&&(d.kg||d.wdh)&&!d.pre){
           totalSets++;
-          totalVol+=d.kg*d.wdh;
-          if(!satz.wu){wsSets++;wsVol+=d.kg*d.wdh;}
-          arr.push({kg:d.kg,wdh:d.wdh,type:(satz.type||"ws"),name:satz.name,wu:!!satz.wu});
+          var v=d.kg*d.wdh;
+          if(slot.unilat) v*=2;          // einarmig: Wert gilt je Seite
+          totalVol+=v;
+          if(!satz.wu){wsSets++;wsVol+=v;}
+          arr.push({kg:d.kg,wdh:d.wdh,type:(satz.type||"ws"),name:satz.name,wu:!!satz.wu,uni:!!slot.unilat});
         } else {
           arr.push(null);
         }
@@ -3999,14 +4387,14 @@ function finishWorkout(){
   var entry={type:"workout",planId:plan.id,planName:plan.name,philId:state.philId||"",
     date:now.toLocaleDateString("de-DE"),weekday:days[now.getDay()],
     startTime:workout.startTimeStr||"",endTime:endTimeStr,
-    mesoWeek:state.mesoWeek,elapsed:elapsed,totalSets:totalSets,totalVol:totalVol,
+    mesoWeek:cycleProgress().runde,elapsed:elapsed,totalSets:totalSets,totalVol:totalVol,
     wsSets:wsSets,wsVol:wsVol,
     sets:setsMap,slotMeta:slotMeta,saetzeSnapshot:JSON.parse(JSON.stringify(plan.paare)),swaps:workout.swapData};
   state.history.push(entry);saveState();
   clearActiveWorkout(); // workout finished cleanly — drop the recovery snapshot
 
   // Mesozyklus auto-progress prompt: after week 6 (deload), suggest starting a new cycle
-  if(state.mesoWeek>=MESO_LENGTH){
+  if(cycleProgress().vollRunden>=MESO_LENGTH){
     setTimeout(function(){promptNewMeso();},1200);
   }
 
@@ -4182,6 +4570,8 @@ function renderSettings(){
   el.innerHTML=html;
   var m=Math.floor(state.defaultTimer/60),s=state.defaultTimer%60;
   document.getElementById("timer-setting").textContent=m+":"+(s<10?"0":"")+s;
+  var bwEl=document.getElementById("bw-setting");
+  if(bwEl) bwEl.textContent = state.bodyWeight ? (state.bodyWeight+" kg") : "—";
   var phil=state.philId?PHILOSOPHIES[state.philId]:null;
   document.getElementById("settings-phil-name").textContent=phil?phil.shortName:"—";
   var ffEl=document.getElementById("forcefree-val");
@@ -4196,6 +4586,11 @@ function renderSettings(){
   }
 }
 function changeTimer(delta){state.defaultTimer=Math.max(30,state.defaultTimer+delta);saveState();renderSettings();}
+function changeBodyWeight(delta){
+  var cur=state.bodyWeight||73;
+  state.bodyWeight=Math.max(30,Math.round((cur+delta)*2)/2);
+  saveState();renderSettings();
+}
 // ══════════════════════════════════
 // PLAN EDITOR — Two-stage
 // Stage 1: plan overview (meta + pair list, reorder/add/remove pairs)
@@ -4268,9 +4663,10 @@ function editMovePair(pi,delta){
   renderEditPairList();
 }
 function editDeletePair(pi){
-  if(!confirm("Paar "+(pi+1)+" wirklich löschen?")) return;
-  editDraft.paare.splice(pi,1);
-  renderEditPairList();
+  askConfirm("Paar "+(pi+1)+" löschen?", "Die Übungen dieses Paars werden aus dem Plan entfernt.", function(){
+    editDraft.paare.splice(pi,1);
+    renderEditPairList();
+  }, {icon:"🗑", yes:"Löschen", no:"Behalten"});
 }
 
 // ── Stage 2: pair detail ─────────────────────────────
@@ -4481,14 +4877,31 @@ function registerServiceWorker(){
 // ══════════════════════════════════
 // MESOZYKLUS PROGRESSION
 // ══════════════════════════════════
+// confirm() wird in der iOS-PWA stillschweigend blockiert — daher ein echtes Overlay.
 function promptNewMeso(){
-  // Cheap confirm for now — could be a styled modal in a later pass
-  if(confirm("Mesozyklus abgeschlossen (Woche "+MESO_LENGTH+" / Deload).\n\nNeuen Mesozyklus mit Woche 1 starten?")){
-    state.mesoWeek=1;
-    saveState();
-    renderHome();
-    showToast("🔄 Neuer Mesozyklus · W1");
-  }
+  var el=document.getElementById("meso-done-overlay");
+  if(!el) return;
+  el.classList.add("open");
+}
+function closeMesoDone(){
+  var el=document.getElementById("meso-done-overlay");
+  if(el) el.classList.remove("open");
+}
+// Neuer Zyklus ohne Uebungswechsel
+function startNewCycle(){
+  resetCycleHere();
+  closeMesoDone();
+  renderHome();
+  showToast("🔄 Neuer Zyklus · Runde 1");
+}
+// Neuer Zyklus und direkt in die Plan-Bearbeitung, um Uebungen zu tauschen
+function startNewCycleAndEdit(){
+  resetCycleHere();
+  closeMesoDone();
+  renderHome();
+  if(typeof openPlanPicker==="function") openPlanPicker();
+  else showScreen("plans");
+  showToast("🔄 Neuer Zyklus · Übungen anpassen");
 }
 
 // ══════════════════════════════════
@@ -4518,6 +4931,35 @@ function discardActiveWorkout(){
 }
 
 // ══════════════════════════════════
+// ASK — Ja/Nein ohne confirm()
+// iOS blockiert confirm() in der installierten PWA stillschweigend: kein
+// Dialog, kein Fehler, der Rueckgabewert ist immer false. Jede Rueckfrage
+// laeuft deshalb ueber dieses Overlay.
+// ══════════════════════════════════
+var askCtx=null;
+function askConfirm(title,text,onYes,opts){
+  opts=opts||{};
+  askCtx={onYes:onYes,onNo:opts.onNo||null};
+  document.getElementById("ask-icon").textContent=opts.icon||"❓";
+  document.getElementById("ask-title").textContent=title||"";
+  document.getElementById("ask-text").textContent=text||"";
+  document.getElementById("ask-yes").textContent=opts.yes||"Ja";
+  document.getElementById("ask-no").textContent=opts.no||"Abbrechen";
+  document.getElementById("ask-dialog").classList.add("open");
+}
+function askAnswer(ja){
+  var ctx=askCtx; askCtx=null;
+  document.getElementById("ask-dialog").classList.remove("open");
+  if(!ctx) return;
+  if(ja){ if(ctx.onYes) ctx.onYes(); }
+  else { if(ctx.onNo) ctx.onNo(); }
+}
+// Tippen neben den Dialog zaehlt als Abbruch — wie das Wegwischen der anderen Overlays.
+function askDismiss(e){
+  if(!e||e.target===document.getElementById("ask-dialog")) askAnswer(false);
+}
+
+// ══════════════════════════════════
 // INIT
 // ══════════════════════════════════
 document.addEventListener("DOMContentLoaded",function(){
@@ -4534,11 +4976,12 @@ document.addEventListener("DOMContentLoaded",function(){
       setTimeout(function(){
         var minsAgo=Math.round((Date.now()-(snap.savedAt||Date.now()))/60000);
         var ago=minsAgo<1?"gerade eben":minsAgo<60?(minsAgo+" Min."):(Math.round(minsAgo/60)+" Std.");
-        if(confirm("Unbeendetes Training gefunden:\n\n"+(snap.plan.name||"?")+"\nzuletzt vor "+ago+"\n\nFortsetzen?")){
-          resumeActiveWorkout(snap);
-        } else {
-          discardActiveWorkout();
-        }
+        askConfirm(
+          "Unbeendetes Training",
+          (snap.plan.name||"?")+"\nzuletzt vor "+ago,
+          function(){ resumeActiveWorkout(snap); },
+          {icon:"▶", yes:"Fortsetzen", no:"Verwerfen", onNo:function(){ discardActiveWorkout(); }}
+        );
       },300);
     }
   }

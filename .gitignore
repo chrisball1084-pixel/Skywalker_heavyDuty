@@ -1,0 +1,14 @@
+node_modules/
+
+# Persoenliche Trainingsdaten — das Repo ist oeffentlich.
+# Muster statt Einzelnamen, damit ein neuer Export nicht versehentlich mitgeht.
+skywalker-backup-merged.json
+skywalker-backup-*.json
+*-backup-*.json
+
+# Abfotografierte Trainingstagebuch-Seiten. Die App-Icons (icon-*.png) bleiben drin.
+*.HEIC
+*.heic
+IMG_*.jpg
+IMG_*.jpeg
+IMG_*.png
