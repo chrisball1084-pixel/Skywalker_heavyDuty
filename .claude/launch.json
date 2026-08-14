@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "skywalker",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tests/serve.js"],
+      "port": 4173
+    }
+  ]
+}

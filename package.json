@@ -4,7 +4,7 @@
   "private": true,
   "description": "Trainingstracker-PWA, eine HTML-Datei ohne Build",
   "scripts": {
-    "test": "node tests/t67.js && node tests/tbug.js && node tests/testimport.js && node tests/testrepo.js && node tests/tsearch.js && node tests/tplan.js && node tests/tuni.js && node tests/tbackupui.js"
+    "test": "node tests/t67.js && node tests/tbug.js && node tests/testimport.js && node tests/testrepo.js && node tests/tsearch.js && node tests/tplan.js && node tests/tuni.js && node tests/tbackupui.js && node tests/tdash.js && node tests/tdeload.js"
   },
   "devDependencies": { "jsdom": "^24.0.0" }
 }

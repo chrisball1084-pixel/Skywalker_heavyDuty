@@ -387,6 +387,39 @@ html.theme-arnold .done-btn.copy{background:#F5A623;color:#000}
 .modal-title{font-family:var(--t-mono);font-size:15px;font-weight:700;color:var(--white);margin-bottom:12px;padding:0 20px}
 .modal-save{width:calc(100% - 40px);height:50px;border:none;background:var(--t-acc);color:var(--white);font-size:14px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;margin:8px 20px;display:block}
 .modal-save:active{transform:scale(.97)}
+/* ── Dashboard ────────────────────────────────────────────── */
+.next-card{margin:0 16px 10px;padding:14px;background:var(--t-card);border:1px solid var(--t-acc);border-radius:13px;cursor:pointer}
+.next-hd{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--t-mid);margin-bottom:8px;font-family:var(--t-mono)}
+.next-main{display:flex;align-items:center;gap:11px}
+.next-ico{font-size:26px;line-height:1}
+.next-name{font-size:16px;font-weight:700;color:var(--white);font-family:var(--t-mono)}
+.next-sub{font-size:11px;color:var(--t-mid);margin-top:2px}
+.next-rest{margin-left:auto;text-align:right}
+.next-days{font-size:22px;font-weight:700;font-family:var(--t-mono);line-height:1}
+.next-dlbl{font-size:9px;color:var(--t-mid);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.dash-sec{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t-acc2);padding:0 20px;margin:20px 0 8px;font-family:var(--t-mono)}
+.dash-note{padding:0 20px 8px;font-size:10px;color:var(--t-mid);line-height:1.5}
+.pg-row{margin:0 20px 6px;padding:11px 13px;background:var(--t-card);border:1px solid var(--t-bdr);border-left:3px solid var(--t-bdr2)}
+.pg-row.up{border-left-color:var(--green)}
+.pg-row.flat{border-left-color:var(--gold)}
+.pg-row.down{border-left-color:var(--t-acc)}
+.pg-top{display:flex;align-items:baseline;gap:8px}
+.pg-name{font-size:13px;font-weight:700;color:var(--white);font-family:var(--t-mono);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pg-val{font-size:13px;font-weight:700;font-family:var(--t-mono);color:var(--gold);white-space:nowrap}
+.pg-meta{font-size:10px;color:var(--t-mid);margin-top:3px}
+.pg-delta{font-size:10px;font-weight:700;font-family:var(--t-mono)}
+.pg-delta.up{color:var(--green)}
+.pg-delta.flat{color:var(--gold)}
+.pg-delta.down{color:var(--t-acc)}
+.pg-spark{display:flex;align-items:flex-end;gap:2px;height:20px;margin-top:6px}
+.pg-bar{flex:1;background:var(--t-acc2);opacity:.45;min-height:2px}
+.pg-bar.last{opacity:1}
+.dash-kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 20px}
+.dash-kpi{background:var(--t-card);border:1px solid var(--t-bdr);padding:11px 13px}
+.dash-kpi-v{font-size:19px;font-weight:700;font-family:var(--t-mono);color:var(--white)}
+.dash-kpi-l{font-size:9px;color:var(--t-mid);letter-spacing:1px;text-transform:uppercase;margin-top:3px}
+.vol-mini{display:flex;align-items:flex-end;gap:3px;height:44px;margin:0 20px;padding:8px 10px;background:var(--t-card);border:1px solid var(--t-bdr)}
+.vol-mini-bar{flex:1;background:var(--t-mid);opacity:.55;min-height:2px}
 .swap-search-wrap{padding:0 20px 10px}
 .swap-search{width:100%;height:42px;box-sizing:border-box;padding:0 12px;border:1px solid var(--t-bdr2);background:var(--t-card);color:var(--white);font-size:15px;font-family:var(--t-mono);-webkit-appearance:none;border-radius:0}
 .swap-search:focus{outline:none;border-color:var(--t-acc)}
@@ -795,6 +828,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
         <span class="meso-wk" id="meso-badge-txt">W1</span>
         <span class="meso-lbl">/ 6</span>
       </div>
+      <button class="icon-btn" onclick="showScreen('dash-screen');renderDash()">📈</button>
       <button class="icon-btn" onclick="showScreen('stats-screen');renderStats()">📊</button>
       <button class="icon-btn" onclick="showScreen('settings-screen');renderSettings()">⚙️</button>
     </div>
@@ -802,6 +836,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
   <div class="meso-strip"><div class="meso-dots" id="meso-dots"></div><div class="cyc-splits" id="cyc-splits"></div></div>
   <div class="scroll">
     <div id="phil-banner"></div>
+    <div id="next-up"></div>
     <div class="sec" id="home-plan-label">Workouts</div>
     <div id="plan-list"></div>
     <div class="sec">Cardio</div>
@@ -1034,6 +1069,16 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
         <div class="sr-val" id="settings-phil-name">—</div>
       </div>
     </div>
+    <div class="sec" style="padding:0">Mesozyklus</div>
+    <div class="settings-sec">
+      <div class="settings-row" onclick="promptNewMeso()" style="cursor:pointer">
+        <div>
+          <div class="sr-lbl">Deload starten</div>
+          <div style="font-size:10px;color:var(--t-mid);margin-top:3px;line-height:1.4">Beginnt den Zyklus neu — jederzeit, unabhängig vom Rundenstand. Die sechs Runden sind ein Richtwert, kein Muss.</div>
+        </div>
+        <div class="sr-val" id="deload-state">—</div>
+      </div>
+    </div>
     <div class="sec" style="padding:0">Daten</div>
     <div class="settings-sec">
       <!-- Zweiter Zugang zum Backup. Derselbe Abschnitt sitzt auch am Fuss des
@@ -1055,6 +1100,34 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
       </div>
     </div>
     <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ══ -->
+<div class="screen" id="dash-screen">
+  <div class="generic-hdr">
+    <button class="back-btn" onclick="showScreen('home')">‹</button>
+    <div class="generic-hdr-title">Dashboard</div>
+  </div>
+  <div class="scroll" style="padding-top:14px">
+    <div id="dash-next"></div>
+
+    <div class="dash-sec">Progression je Übung</div>
+    <div class="dash-note">HIT-Satz je Übung. Der Wert ist das geschätzte 1RM — damit sind 40×8 und 45×5 vergleichbar. Verglichen wird gegen das letzte Mal, als die Übung dran war.</div>
+    <div id="dash-prog"></div>
+
+    <div class="dash-sec">Bestwerte</div>
+    <div id="dash-best"></div>
+
+    <div class="dash-sec">Konsistenz</div>
+    <div class="dash-kpis" id="dash-konsistenz"></div>
+
+    <div class="dash-sec">Volumen</div>
+    <div class="dash-note">Bewusst klein gehalten: Steigendes Volumen ist bei Heavy Duty kein Ziel. Die Intensität zählt, nicht die Tonnage.</div>
+    <div class="vol-mini" id="dash-vol"></div>
+    <div class="dash-note" id="dash-vol-lbl" style="padding-top:6px"></div>
+
+    <div style="height:24px"></div>
   </div>
 </div>
 
@@ -1334,7 +1407,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.8.0";
+var APP_VERSION = "v6.9.0";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -2096,13 +2169,22 @@ function renderHome(){
       '<div style="font-size:12px;color:var(--t-mid)">Keine Philosophie gewählt</div>'+
       '<div style="font-size:11px;color:var(--t-acc);margin-top:4px;font-weight:700">→ Philosophie wählen</div></div>';
   }
+  renderNextUp();
   renderMesoStrip();renderPlanList();renderCardioList();renderHistory();
 }
 
 function renderMesoStrip(){
   var cyc=cycleProgress(), w=cyc.runde;
   var badge=document.getElementById("meso-badge-txt");
-  if(badge) badge.textContent="Runde "+w+"/"+MESO_LENGTH;
+  if(badge){
+    // Die Anzeige bleibt im Rahmen der sechs Runden. Ist der Deload ueberfaellig,
+    // haengt die Zahl der Runden darueber als "+N" dran — der Richtwert bleibt
+    // sichtbar, die tatsaechliche Lage aber auch.
+    var dl=deloadStatus();
+    badge.textContent="Runde "+w+"/"+MESO_LENGTH;
+    if(dl.ueberfaellig) badge.textContent+=" +"+dl.ueber;
+    badge.style.color = dl.ueberfaellig ? "var(--t-acc)" : (dl.faellig ? "var(--gold)" : "");
+  }
   var el=document.getElementById("meso-dots"),html="";
   for(var i=1;i<=MESO_LENGTH;i++){
     var cls="meso-dot";
@@ -2654,6 +2736,286 @@ function cycleProgress(){
   return {runde:Math.min(voll+1,MESO_LENGTH), vollRunden:voll, gesamt:MESO_LENGTH,
           offen:offen, fertig:fertig, planNames:names};
 }
+// ══════════════════════════════════
+// DASHBOARD
+// Nach Nutzen sortiert und auf Heavy Duty abgestimmt: Der Abstand zwischen
+// den Einheiten und die Intensitaet je Uebung stehen oben, das Volumen unten.
+// Streaks und Tagesziele gibt es bewusst nicht — die wuerden haeufiges
+// Training belohnen und damit genau das falsche Signal geben.
+// ══════════════════════════════════
+
+// Deload-Stand. MESO_LENGTH ist ein Richtwert, keine Regel — die App zeigt
+// nur an, entschieden wird von Hand. Wer beruflich unterwegs ist, legt seine
+// Pausen ohnehin nach Lebenslage, nicht nach Rundenzaehler.
+function deloadStatus(){
+  var c = cycleProgress();
+  var ueber = c.vollRunden - MESO_LENGTH;
+  return {
+    runden: c.vollRunden,
+    ziel: MESO_LENGTH,
+    faellig: c.vollRunden >= MESO_LENGTH,
+    ueberfaellig: ueber > 0,
+    ueber: ueber > 0 ? ueber : 0
+  };
+}
+function deloadBannerHtml(){
+  var d = deloadStatus();
+  if(!d.faellig) return "";
+  var farbe = d.ueberfaellig ? "var(--t-acc)" : "var(--gold)";
+  var titel = d.ueberfaellig
+      ? "Deload überfällig — " + d.runden + " Runden statt " + d.ziel
+      : "Deload fällig — " + d.runden + " volle Runden";
+  return '<div style="margin:0 16px 10px;padding:12px 13px;background:var(--t-card);border:1px solid '+farbe+';border-left:3px solid '+farbe+';border-radius:13px">'+
+    '<div style="font-size:12px;font-weight:700;color:'+farbe+';font-family:var(--t-mono)">'+titel+'</div>'+
+    '<div style="font-size:10px;color:var(--t-mid);margin-top:4px;line-height:1.5">Richtwert, keine Regel — du entscheidest, wann es passt.</div>'+
+    '<button onclick="event.stopPropagation();promptNewMeso()" style="margin-top:9px;width:100%;height:38px;border-radius:10px;border:none;background:'+farbe+';color:var(--white);font-size:12px;font-weight:700;font-family:\'Syne\',sans-serif;cursor:pointer">Deload starten</button>'+
+    '</div>';
+}
+
+// Geschaetztes 1RM nach Epley. Macht 40x8 und 45x5 vergleichbar.
+function est1RM(kg, wdh){
+  if(!kg || !wdh) return 0;
+  return kg * (1 + wdh/30);
+}
+function dashDatum(s){
+  var t = String(s||"").split(".");
+  if(t.length<3) return null;
+  var d = new Date(parseInt(t[2],10), parseInt(t[1],10)-1, parseInt(t[0],10));
+  return isNaN(d.getTime()) ? null : d;
+}
+function dashWorkouts(){
+  return (state.history||[]).filter(function(h){ return h.type!=="cardio"; });
+}
+function dashTageSeit(){
+  var ws = dashWorkouts();
+  if(!ws.length) return null;
+  var d = dashDatum(ws[ws.length-1].date);
+  if(!d) return null;
+  var heute = new Date(); heute.setHours(0,0,0,0);
+  return Math.round((heute - d) / 86400000);
+}
+
+// Alle HIT-Saetze einer Uebung, chronologisch. Einarmig zaehlt je Seite —
+// das 1RM bleibt damit die Last pro Seite und ist ueber den Umstieg hinweg
+// nur innerhalb derselben Ausfuehrung vergleichbar.
+function dashUebungsVerlauf(){
+  var map = {};
+  dashWorkouts().forEach(function(h){
+    if(!h.sets || !h.slotMeta) return;
+    Object.keys(h.slotMeta).forEach(function(k){
+      var arr = h.sets[k];
+      if(!Array.isArray(arr)) return;
+      var name = h.slotMeta[k];
+      if(!name || name==="— (leer)") return;
+      var best = null;
+      arr.forEach(function(s){
+        if(!s || !s.kg || !s.wdh) return;
+        if(normType(s.type)!=="hit") return;
+        var e = est1RM(parseFloat(s.kg), parseFloat(s.wdh));
+        if(!best || e>best.e1rm) best = {e1rm:e, kg:parseFloat(s.kg), wdh:parseFloat(s.wdh), uni:!!s.uni};
+      });
+      if(!best) return;
+      var key = (h.planId||"?") + "||" + name;
+      if(!map[key]) map[key] = {planId:h.planId, planName:h.planName||"—", name:name, punkte:[]};
+      map[key].punkte.push({date:h.date, e1rm:best.e1rm, kg:best.kg, wdh:best.wdh, uni:best.uni});
+    });
+  });
+  return map;
+}
+
+function renderDash(){
+  renderDashNext();
+  renderDashProgression();
+  renderDashBest();
+  renderDashKonsistenz();
+  renderDashVolumen();
+}
+
+// ── 1) Was steht an? ───────────────────────────────────────
+function naechsterSplitHtml(kompakt){
+  var c = cycleProgress();
+  var ws = dashWorkouts();
+  if(!ws.length || !state.plans || !state.plans.length) return "";
+  var offenId = c.offen.length ? c.offen[0] : (state.plans[0]||{}).id;
+  var plan = state.plans.filter(function(p){return p.id===offenId;})[0];
+  if(!plan) return "";
+  var idx = state.plans.indexOf(plan);
+  var tage = dashTageSeit();
+  var tageTxt = tage===null ? "—" : (tage===0 ? "heute" : String(tage));
+  var farbe = tage===null ? "var(--t-mid)" : (tage>=4 ? "var(--green)" : (tage>=2 ? "var(--gold)" : "var(--t-acc)"));
+  var hinweis = tage===null ? "" :
+      (tage===0 ? "Heute schon trainiert" :
+       tage===1 ? "Erst ein Tag Pause — bei Heavy Duty meist zu früh" :
+       tage>=6  ? "Lange Pause" : "Regeneration passt");
+
+  var html = '<div class="next-card" onclick="startWorkout('+idx+')">';
+  html += '<div class="next-hd">Was steht an</div>';
+  html += '<div class="next-main">';
+  html += '<div class="next-ico">'+(plan.icon||"🏋️")+'</div>';
+  html += '<div style="min-width:0"><div class="next-name">'+esc(plan.name)+'</div>';
+  html += '<div class="next-sub">Runde '+c.runde+'/'+c.gesamt+' · '+c.fertig.length+' von '+state.plans.length+' Splits erledigt</div></div>';
+  html += '<div class="next-rest"><div class="next-days" style="color:'+farbe+'">'+tageTxt+'</div>';
+  html += '<div class="next-dlbl">'+(tage===0?"trainiert":(tage===1?"Tag Pause":"Tage Pause"))+'</div></div>';
+  html += '</div>';
+  if(hinweis && !kompakt) html += '<div class="next-sub" style="margin-top:8px">'+hinweis+'</div>';
+  html += '</div>';
+  return html;
+}
+function renderNextUp(){
+  var el = document.getElementById("next-up");
+  if(el) el.innerHTML = deloadBannerHtml() + naechsterSplitHtml(true);
+}
+function renderDashNext(){
+  var el = document.getElementById("dash-next");
+  if(!el) return;
+  var karte = naechsterSplitHtml(false);
+  el.innerHTML = deloadBannerHtml() + (karte || '<div class="dash-note">Noch keine Einheiten erfasst.</div>');
+}
+
+// ── 2) Progression je Übung ────────────────────────────────
+function renderDashProgression(){
+  var el = document.getElementById("dash-prog");
+  if(!el) return;
+  var map = dashUebungsVerlauf();
+  var keys = Object.keys(map);
+  if(!keys.length){ el.innerHTML='<div class="dash-note">Noch keine HIT-Sätze erfasst.</div>'; return; }
+
+  // Nur Uebungen, die im aktuellen Zyklus vorkamen, und nur mit mindestens
+  // zwei Datenpunkten — alles andere sagt ueber Progression nichts aus.
+  var abIdx = cycleStartIndex();
+  var imZyklus = {};
+  dashWorkouts().slice(abIdx).forEach(function(h){
+    Object.keys(h.slotMeta||{}).forEach(function(k){ imZyklus[(h.planId||"?")+"||"+h.slotMeta[k]] = true; });
+  });
+
+  var zeilen = keys.filter(function(k){ return imZyklus[k] && map[k].punkte.length>=2; }).map(function(k){
+    var u = map[k], p = u.punkte;
+    var letzte = p[p.length-1];
+    // Vergleichsbasis ist das letzte Mal, als die Uebung dran war. Das ist die
+    // Frage, die im Gym zaehlt — "bin ich gegenueber dem letzten Mal weiter?".
+    // Gegen den Zyklusbeginn zu messen taugt hier nicht: Wer cycleStart nie
+    // zuruecksetzt, vergleicht sonst gegen die allererste Einheit ueberhaupt.
+    var basis = p[p.length-2];
+    var delta = letzte.e1rm - basis.e1rm;
+    var proz = basis.e1rm ? (delta/basis.e1rm*100) : 0;
+    // Stagnation: die letzten drei Werte bringen kein neues Bestergebnis
+    var stagniert = false;
+    if(p.length>=4){
+      var vorher = p.slice(0, p.length-3).reduce(function(a,x){return Math.max(a,x.e1rm);},0);
+      var letzte3 = p.slice(-3).reduce(function(a,x){return Math.max(a,x.e1rm);},0);
+      stagniert = letzte3 <= vorher + 0.5;
+    }
+    return {u:u, letzte:letzte, delta:delta, proz:proz, stagniert:stagniert, p:p};
+  });
+
+  if(!zeilen.length){ el.innerHTML='<div class="dash-note">Noch zu wenig Daten im laufenden Zyklus.</div>'; return; }
+  zeilen.sort(function(a,b){ return b.proz - a.proz; });
+
+  var html="", aktuellerPlan=null;
+  zeilen.forEach(function(z){
+    if(z.u.planName !== aktuellerPlan){
+      aktuellerPlan = z.u.planName;
+      html += '<div class="dash-note" style="color:var(--t-acc);font-weight:700;padding-top:6px">'+esc(aktuellerPlan)+'</div>';
+    }
+    var richtung = z.delta > 0.5 ? "up" : (z.delta < -0.5 ? "down" : "flat");
+    var pfeil    = z.delta > 0.5 ? "▲" : (z.delta < -0.5 ? "▼" : "→");
+    // Die Randfarbe zeigt die Lage insgesamt: Stagnation schlaegt eine einzelne
+    // gute Einheit, weil sie bei Heavy Duty das Signal zum Wechsel ist.
+    var klasse = z.stagniert ? "flat" : richtung;
+    html += '<div class="pg-row '+klasse+'">';
+    html += '<div class="pg-top"><div class="pg-name">'+esc(z.u.name)+'</div>';
+    html += '<div class="pg-val">'+Math.round(z.letzte.e1rm)+' kg</div></div>';
+    html += '<div class="pg-meta">'+z.letzte.kg+' × '+z.letzte.wdh+(z.letzte.uni?' je Seite':'')+' · '+esc(z.letzte.date)+
+            '  <span class="pg-delta '+richtung+'">'+pfeil+' '+(z.delta>=0?"+":"")+Math.round(z.delta)+' kg vs. zuletzt</span></div>';
+    if(z.stagniert) html += '<div class="pg-meta" style="color:var(--gold)">kein neuer Bestwert seit 3 Einheiten — Übung wechseln oder Deload</div>';
+    // Sparkline der letzten acht Werte
+    var s = z.p.slice(-8);
+    var max = s.reduce(function(a,x){return Math.max(a,x.e1rm);},0) || 1;
+    html += '<div class="pg-spark">';
+    s.forEach(function(x,i){
+      html += '<div class="pg-bar'+(i===s.length-1?" last":"")+'" style="height:'+Math.max(6, Math.round(x.e1rm/max*100))+'%"></div>';
+    });
+    html += '</div></div>';
+  });
+  el.innerHTML = html;
+}
+// Liegt das Datum im laufenden Zyklus?
+function istImZyklus(datum){
+  var ws = dashWorkouts().slice(cycleStartIndex());
+  for(var i=0;i<ws.length;i++) if(ws[i].date===datum) return true;
+  return false;
+}
+
+// ── 3) Bestwerte ───────────────────────────────────────────
+function renderDashBest(){
+  var el = document.getElementById("dash-best");
+  if(!el) return;
+  var map = dashUebungsVerlauf();
+  var beste = Object.keys(map).map(function(k){
+    var u = map[k], top = null;
+    u.punkte.forEach(function(p){ if(!top || p.e1rm>top.e1rm) top = p; });
+    return {name:u.name, planName:u.planName, top:top};
+  }).filter(function(x){ return x.top; });
+  if(!beste.length){ el.innerHTML='<div class="dash-note">Noch keine Bestwerte.</div>'; return; }
+  beste.sort(function(a,b){ return b.top.e1rm - a.top.e1rm; });
+  var html="";
+  beste.slice(0,12).forEach(function(b){
+    html += '<div class="pg-row">';
+    html += '<div class="pg-top"><div class="pg-name">'+esc(b.name)+'</div>';
+    html += '<div class="pg-val">'+Math.round(b.top.e1rm)+' kg</div></div>';
+    html += '<div class="pg-meta">'+b.top.kg+' × '+b.top.wdh+(b.top.uni?' je Seite':'')+' · '+esc(b.top.date)+' · '+esc(b.planName)+'</div>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+// ── 4) Konsistenz ──────────────────────────────────────────
+function renderDashKonsistenz(){
+  var el = document.getElementById("dash-konsistenz");
+  if(!el) return;
+  var ws = dashWorkouts();
+  if(ws.length<2){ el.innerHTML='<div class="dash-note">Noch zu wenig Einheiten.</div>'; return; }
+  var daten = ws.map(function(h){ return dashDatum(h.date); }).filter(function(d){ return d; });
+  var abstaende = [];
+  for(var i=1;i<daten.length;i++) abstaende.push(Math.round((daten[i]-daten[i-1])/86400000));
+  var schnitt = abstaende.length ? (abstaende.reduce(function(a,b){return a+b;},0)/abstaende.length) : 0;
+  // Einheiten der letzten 30 Tage
+  var grenze = new Date(); grenze.setDate(grenze.getDate()-30);
+  var letzte30 = daten.filter(function(d){ return d>=grenze; }).length;
+  var c = cycleProgress();
+  var kpis = [
+    [ws.length, "Einheiten gesamt"],
+    [letzte30, "letzte 30 Tage"],
+    [schnitt.toFixed(1).replace(".",",")+" T", "Ø Abstand"],
+    [c.vollRunden, "volle Runden"]
+  ];
+  var html="";
+  kpis.forEach(function(k){
+    html += '<div class="dash-kpi"><div class="dash-kpi-v">'+k[0]+'</div><div class="dash-kpi-l">'+k[1]+'</div></div>';
+  });
+  el.innerHTML = html;
+}
+
+// ── 5) Volumen ─────────────────────────────────────────────
+function renderDashVolumen(){
+  var el = document.getElementById("dash-vol");
+  var lbl = document.getElementById("dash-vol-lbl");
+  if(!el) return;
+  var ws = dashWorkouts().slice(-14);
+  if(!ws.length){ el.innerHTML=""; if(lbl) lbl.textContent=""; return; }
+  var max = ws.reduce(function(a,h){ return Math.max(a, h.totalVol||0); },0) || 1;
+  var html="";
+  ws.forEach(function(h){
+    html += '<div class="vol-mini-bar" style="height:'+Math.max(4, Math.round((h.totalVol||0)/max*100))+'%"></div>';
+  });
+  el.innerHTML = html;
+  if(lbl){
+    var summe = dashWorkouts().reduce(function(a,h){ return a+(h.totalVol||0); },0);
+    lbl.textContent = "Letzte "+ws.length+" Einheiten · "+esc(ws[0].date)+" bis "+esc(ws[ws.length-1].date)+
+                      " · gesamt "+(summe/1000).toFixed(1).replace(".",",")+" t";
+  }
+}
+
 // Zyklus hier neu beginnen lassen (nach Deload oder beim Import von Altdaten)
 function resetCycleHere(){
   state.cycleStart=(state.history||[]).filter(function(h){return h.type!=="cardio";}).length;
@@ -4568,6 +4930,12 @@ function renderSettings(){
     });
   }else{html='<div class="settings-row"><div class="sr-lbl" style="color:var(--t-dim)">Keine Pläne</div></div>';}
   el.innerHTML=html;
+  var dEl=document.getElementById("deload-state");
+  if(dEl){
+    var d=deloadStatus();
+    dEl.textContent = d.ueberfaellig ? "überfällig" : (d.faellig ? "fällig" : "Runde "+(d.runden+1)+"/"+d.ziel);
+    dEl.style.color = d.ueberfaellig ? "var(--t-acc)" : (d.faellig ? "var(--gold)" : "var(--t-mid)");
+  }
   var m=Math.floor(state.defaultTimer/60),s=state.defaultTimer%60;
   document.getElementById("timer-setting").textContent=m+":"+(s<10?"0":"")+s;
   var bwEl=document.getElementById("bw-setting");
@@ -4881,6 +5249,23 @@ function registerServiceWorker(){
 function promptNewMeso(){
   var el=document.getElementById("meso-done-overlay");
   if(!el) return;
+  // Text an die Lage anpassen: faellig, ueberfaellig oder bewusst frueh
+  var d=deloadStatus();
+  var kopf=el.querySelector(".fw-timer-lbl");
+  var txt=document.getElementById("meso-done-txt");
+  if(kopf) kopf.textContent = d.ueberfaellig ? "DELOAD ÜBERFÄLLIG" : (d.faellig ? "ZYKLUS ABGESCHLOSSEN" : "DELOAD VORZIEHEN");
+  if(txt){
+    if(d.ueberfaellig){
+      txt.textContent = d.runden+" volle Durchläufe statt der angepeilten "+d.ziel+". "+
+        "Ein Deload ist überfällig — und ein guter Zeitpunkt, einzelne Übungen zu wechseln.";
+    } else if(d.faellig){
+      txt.textContent = d.runden+" volle Durchläufe geschafft. Jetzt ist ein Deload sinnvoll — "+
+        "und ein guter Zeitpunkt, einzelne Übungen zu wechseln.";
+    } else {
+      txt.textContent = "Erst "+d.runden+" von "+d.ziel+" Runden. Der Zyklus startet trotzdem neu — "+
+        "sinnvoll etwa vor einer Reise oder nach einer schlechten Regenerationsphase.";
+    }
+  }
   el.classList.add("open");
 }
 function closeMesoDone(){

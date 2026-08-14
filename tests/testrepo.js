@@ -21,7 +21,7 @@ ok("App-Shell vorgecacht", sw.includes('SHELL = ["./", "./index.html"'));
 ok("skipWaiting", sw.includes("skipWaiting"));
 ok("alte Caches aufräumen", sw.includes("caches.delete(k)"));
 ok("Offline-Fallback", sw.includes('caches.match("./index.html")'));
-ok("Version im Cache-Namen", sw.includes("sky-training-v6.8.0"));
+ok("Version im Cache-Namen", sw.includes("sky-training-v6.9.0"));
 // SW-Syntax prüfen
 const vm=require('vm');
 const ctx={self:{addEventListener:()=>{},location:{origin:"https://user.github.io"},skipWaiting:()=>{},clients:{claim:()=>{}}},caches:{},fetch:()=>{},Promise};
@@ -31,7 +31,7 @@ catch(e){ ok("sw.js syntaktisch valide: "+e.message, false); }
 
 console.log("\n[3] App läuft weiterhin");
 ok("App initialisiert", typeof w.PHILOSOPHIES==="object");
-ok("Version v6.8.0", w.APP_VERSION==="v6.8.0");
+ok("Version v6.9.0", w.APP_VERSION==="v6.9.0");
 w.state.philId="skywalker"; w.applyTheme("skywalker");
 ok("Theme-Alias aktiv", w.document.documentElement.classList.contains("theme-mentzer"));
 w.state.plans=JSON.parse(JSON.stringify(w.PHILOSOPHIES.skywalker.plans));
