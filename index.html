@@ -22,10 +22,13 @@
   --bg:#06060E;--sur:#0A0A16;--card:#0F0F20;--bdr:#181830;--bdr2:#242440;
   --acc:#E94560;--acc2:#00C8AA;--acc3:#0FBFBF;
   --gold:#F5A623;--green:#2ECC71;--blue:#4A9EFF;
-  --white:#FFF;--light:#D0D0E8;--mid:#505075;--dim:#1E1E35;
+  /* --mid / --t-mid ist die Farbe fast aller Nebentexte. Sie muss gegen
+     --t-card mindestens 4.5:1 erreichen (WCAG AA fuer Kleintext), sonst ist
+     sie am Handy im Gym nicht lesbar. Die alten Werte lagen bei 2–3:1. */
+  --white:#FFF;--light:#D0D0E8;--mid:#9C9CC0;--dim:#1E1E35;
   --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
   --t-bg:#06060E;--t-sur:#0A0A16;--t-card:#0F0F20;--t-bdr:#181830;--t-bdr2:#242440;
-  --t-acc:#E94560;--t-acc2:#00C8AA;--t-mid:#505075;--t-dim:#1E1E35;
+  --t-acc:#E94560;--t-acc2:#00C8AA;--t-mid:#9C9CC0;--t-dim:#1E1E35;
   --t-font:'Syne',sans-serif;--t-mono:'Space Mono',monospace;
 }
 html,body{height:100%;width:100%;overflow:hidden;overscroll-behavior:none;
@@ -41,12 +44,12 @@ html,body{height:100%;width:100%;overflow:hidden;overscroll-behavior:none;
    PHILOSOPHY THEMES
 ══════════════════════════════════ */
 /* Applied to <html> via JS */
-html.theme-mentzer{--t-bg:#080015;--t-sur:#0D001E;--t-card:#12002A;--t-bdr:#1E0040;--t-bdr2:#2C0058;--t-acc:#ff0090;--t-acc2:#00f5ff;--t-mid:#7722AA;--t-dim:#1A0030;--t-font:'Share Tech Mono',monospace;--t-mono:'Share Tech Mono',monospace;}
-html.theme-dorian{--t-bg:#080005;--t-sur:#100008;--t-card:#180010;--t-bdr:#240018;--t-bdr2:#340028;--t-acc:#FF3200;--t-acc2:#FF7700;--t-mid:#772200;--t-dim:#200800;--t-font:'Oswald',sans-serif;--t-mono:'Space Mono',monospace;}
-html.theme-arnold{--t-bg:#090800;--t-sur:#130E00;--t-card:#1C1400;--t-bdr:#2A1E00;--t-bdr2:#3A2C00;--t-acc:#F5A623;--t-acc2:#FFD700;--t-mid:#886600;--t-dim:#251A00;--t-font:'Playfair Display',serif;--t-mono:'Space Mono',monospace;}
-html.theme-upperlower{--t-bg:#06060E;--t-sur:#0A0A16;--t-card:#0F0F20;--t-bdr:#181830;--t-bdr2:#242440;--t-acc:#E94560;--t-acc2:#00C8AA;--t-mid:#505075;--t-dim:#1E1E35;--t-font:'Syne',sans-serif;--t-mono:'Space Mono',monospace;}
-html.theme-wholebody{--t-bg:#06060E;--t-sur:#0A0A16;--t-card:#0F0F20;--t-bdr:#181830;--t-bdr2:#242440;--t-acc:#0FBFBF;--t-acc2:#4A9EFF;--t-mid:#2A5566;--t-dim:#0A2030;--t-font:'Syne',sans-serif;--t-mono:'Space Mono',monospace;}
-html.theme-skywalker{--t-bg:#01121A;--t-sur:#04202B;--t-card:#062B38;--t-bdr:#0E4155;--t-bdr2:#16596F;--t-acc:#00E5C0;--t-acc2:#00f5ff;--t-mid:#4E9FB5;--t-dim:#05202C;--t-font:'Share Tech Mono',monospace;--t-mono:'Share Tech Mono',monospace;}
+html.theme-mentzer{--t-bg:#080015;--t-sur:#0D001E;--t-card:#12002A;--t-bdr:#1E0040;--t-bdr2:#2C0058;--t-acc:#ff0090;--t-acc2:#00f5ff;--t-mid:#B49BD8;--t-dim:#1A0030;--t-font:'Share Tech Mono',monospace;--t-mono:'Share Tech Mono',monospace;}
+html.theme-dorian{--t-bg:#080005;--t-sur:#100008;--t-card:#180010;--t-bdr:#240018;--t-bdr2:#340028;--t-acc:#FF3200;--t-acc2:#FF7700;--t-mid:#D9A28A;--t-dim:#200800;--t-font:'Oswald',sans-serif;--t-mono:'Space Mono',monospace;}
+html.theme-arnold{--t-bg:#090800;--t-sur:#130E00;--t-card:#1C1400;--t-bdr:#2A1E00;--t-bdr2:#3A2C00;--t-acc:#F5A623;--t-acc2:#FFD700;--t-mid:#D6C48F;--t-dim:#251A00;--t-font:'Playfair Display',serif;--t-mono:'Space Mono',monospace;}
+html.theme-upperlower{--t-bg:#06060E;--t-sur:#0A0A16;--t-card:#0F0F20;--t-bdr:#181830;--t-bdr2:#242440;--t-acc:#E94560;--t-acc2:#00C8AA;--t-mid:#9C9CC0;--t-dim:#1E1E35;--t-font:'Syne',sans-serif;--t-mono:'Space Mono',monospace;}
+html.theme-wholebody{--t-bg:#06060E;--t-sur:#0A0A16;--t-card:#0F0F20;--t-bdr:#181830;--t-bdr2:#242440;--t-acc:#0FBFBF;--t-acc2:#4A9EFF;--t-mid:#93B4C6;--t-dim:#0A2030;--t-font:'Syne',sans-serif;--t-mono:'Space Mono',monospace;}
+html.theme-skywalker{--t-bg:#01121A;--t-sur:#04202B;--t-card:#062B38;--t-bdr:#0E4155;--t-bdr2:#16596F;--t-acc:#00E5C0;--t-acc2:#00f5ff;--t-mid:#6FB8CC;--t-dim:#05202C;--t-font:'Share Tech Mono',monospace;--t-mono:'Share Tech Mono',monospace;}
 .theme-bg{position:fixed;inset:0;z-index:0;pointer-events:none}
 html.theme-mentzer .theme-bg{background:#080015;background-image:linear-gradient(rgba(0,245,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,.05) 1px,transparent 1px);background-size:40px 40px}
 html.theme-mentzer .theme-bg::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40%;background:radial-gradient(ellipse at 50% 100%,rgba(255,0,144,.18) 0%,transparent 70%)}
@@ -702,7 +705,7 @@ html.theme-mentzer .rp-ring{text-shadow:0 0 22px rgba(255,140,26,.55)}
 
 /* ── v6.7.0 ─────────────────────────────────────── */
 .fo-state{flex:1;padding:11px;text-align:center;font-family:var(--t-mono);font-size:10px;
-  font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t-dim);
+  font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t-mid);
   border:1px solid var(--t-bdr2)}
 .fo-state.done{color:#00f5ff;border-color:rgba(0,245,255,.4)}
 html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
@@ -712,16 +715,16 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 .fo-add.wu{color:#00f5ff;border-color:rgba(0,245,255,.4)}
 .fo-uni-row{margin-top:8px}
 .fo-uni{width:100%;padding:10px;background:transparent;border:1px dashed var(--t-bdr2);
-  color:var(--t-dim);font-family:var(--t-mono);font-size:10px;font-weight:700;
+  color:var(--t-mid);font-family:var(--t-mono);font-size:10px;font-weight:700;
   letter-spacing:1px;cursor:pointer;text-transform:uppercase}
 .fo-uni.on{color:var(--t-acc);border-color:var(--t-acc);border-style:solid}
 .rp-next{margin:14px 0 4px;padding-top:12px;border-top:1px solid var(--t-bdr)}
-.rp-next-lbl{font-family:var(--t-mono);font-size:8px;letter-spacing:2px;color:var(--t-dim)}
+.rp-next-lbl{font-family:var(--t-mono);font-size:8px;letter-spacing:2px;color:var(--t-mid)}
 .rp-next-ex{font-family:var(--t-mono);font-size:13px;font-weight:700;color:var(--white);margin-top:4px}
 .rp-next-set{font-family:var(--t-mono);font-size:11px;color:#FF8C1A;margin-top:3px}
 .cyc-splits{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
 .cyc-split{font-family:var(--t-mono);font-size:8px;letter-spacing:1px;padding:3px 6px;
-  border:1px solid var(--t-bdr2);color:var(--t-dim)}
+  border:1px solid var(--t-bdr2);color:var(--t-mid)}
 .cyc-split.done{color:#00f5ff;border-color:rgba(0,245,255,.4)}
 </style>
 </head>
@@ -1407,7 +1410,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.9.0";
+var APP_VERSION = "v6.9.1";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -2206,7 +2209,7 @@ function renderMesoStrip(){
 
 function renderPlanList(){
   var el=document.getElementById("plan-list");
-  if(!state.plans||!state.plans.length){el.innerHTML='<div style="color:var(--t-dim);font-size:12px;padding:4px 20px 12px">Keine Pläne. Philosophie wählen.</div>';return;}
+  if(!state.plans||!state.plans.length){el.innerHTML='<div style="color:var(--t-mid);font-size:12px;padding:4px 20px 12px">Keine Pläne. Philosophie wählen.</div>';return;}
   var html="",today=todayStr();
   state.plans.forEach(function(plan,idx){
     var last=null;
@@ -2235,7 +2238,7 @@ function renderCardioList(){
     html+='<div style="font-size:22px;width:32px;text-align:center">'+p.icon+'</div>';
     html+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--white)">'+p.name+'</div>';
     html+='<div style="font-size:11px;color:var(--t-mid);margin-top:1px">'+p.info.split("\n")[0]+'</div></div>';
-    html+='<div style="color:var(--t-dim);font-size:16px">›</div></div>';
+    html+='<div style="color:var(--t-mid);font-size:16px">›</div></div>';
   });
   el.innerHTML=html;
 }
@@ -2243,7 +2246,7 @@ function renderCardioList(){
 function renderHistory(){
   var el=document.getElementById("history-list");
   var recent=state.history.slice(-5).reverse();
-  if(!recent.length){el.innerHTML='<div style="color:var(--t-dim);font-size:12px;padding:4px 20px 12px">Noch keine Einheiten</div>';return;}
+  if(!recent.length){el.innerHTML='<div style="color:var(--t-mid);font-size:12px;padding:4px 20px 12px">Noch keine Einheiten</div>';return;}
   var html="";
   recent.forEach(function(h){
     if(h.type==="cardio"){
@@ -4550,7 +4553,7 @@ function updateNextPreview(){
   var addBtns=document.getElementById("pause-add-btns");
 
   if(!pair){
-    if(el) el.innerHTML='<div style="color:var(--t-dim);font-size:12px">— Ende —</div>';
+    if(el) el.innerHTML='<div style="color:var(--t-mid);font-size:12px">— Ende —</div>';
     if(lbl){lbl.textContent="Nächster Satz";lbl.style.color="var(--t-mid)";}
     if(addBtns){addBtns.innerHTML="";addBtns.style.display="none";}
     return;
@@ -4577,7 +4580,7 @@ function updateNextPreview(){
     }
     html+='<div class="next-ex">'+slot.ueb+satzLbl+wdhLbl+hitNote+'</div>';
   });
-  if(el) el.innerHTML=html||'<div style="color:var(--t-dim);font-size:12px">— Ende —</div>';
+  if(el) el.innerHTML=html||'<div style="color:var(--t-mid);font-size:12px">— Ende —</div>';
 
   if(lbl){
     var typeStr=nextSatzType?(" · "+nextSatzType.name):"";
@@ -4928,7 +4931,7 @@ function renderSettings(){
       html+='<div class="sr-lbl">'+plan.icon+" "+plan.name+'</div>';
       html+='<div class="sr-val" style="color:'+plan.color+'">Bearbeiten ›</div></div>';
     });
-  }else{html='<div class="settings-row"><div class="sr-lbl" style="color:var(--t-dim)">Keine Pläne</div></div>';}
+  }else{html='<div class="settings-row"><div class="sr-lbl" style="color:var(--t-mid)">Keine Pläne</div></div>';}
   el.innerHTML=html;
   var dEl=document.getElementById("deload-state");
   if(dEl){
@@ -4995,7 +4998,7 @@ function closeEdit(e){
 function renderEditPairList(){
   var el=document.getElementById("edit-pair-list"),html="";
   if(!editDraft||!editDraft.paare.length){
-    el.innerHTML='<div style="color:var(--t-dim);font-size:11px;padding:12px;text-align:center;background:var(--t-card);border:1px dashed var(--t-bdr)">Noch keine Paare. Tippe + Paar.</div>';
+    el.innerHTML='<div style="color:var(--t-mid);font-size:11px;padding:12px;text-align:center;background:var(--t-card);border:1px dashed var(--t-bdr)">Noch keine Paare. Tippe + Paar.</div>';
     return;
   }
   editDraft.paare.forEach(function(pair,pi){
@@ -5084,7 +5087,7 @@ function renderEditPairDetail(){
     html+='<div style="padding:0 12px 10px">';
     html+='<div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--t-mid);margin:6px 0 6px">SÄTZE ('+slot.saetze.length+')</div>';
     if(slot.saetze.length===0){
-      html+='<div style="font-size:11px;color:var(--t-dim);padding:8px;text-align:center;background:var(--t-sur);border:1px dashed var(--t-bdr)">Keine Sätze · → Typ wählen unten</div>';
+      html+='<div style="font-size:11px;color:var(--t-mid);padding:8px;text-align:center;background:var(--t-sur);border:1px dashed var(--t-bdr)">Keine Sätze · → Typ wählen unten</div>';
     } else {
       slot.saetze.forEach(function(satz,i){
         var typeColor=satzTypeColor(satz);
