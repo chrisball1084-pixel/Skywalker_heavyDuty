@@ -1410,7 +1410,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.9.1";
+var APP_VERSION = "v6.9.2";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -3407,9 +3407,45 @@ function getProgressionGoal(slot, prev, pi, si){
 }
 
 // Zielwerte fuer einen beliebigen Satz — Basis fuer die Vorbelegung der Eingabefelder
+// Sucht in der Historie den Satz, der zu Satz i des aktuellen Slots gehoert.
+// Zuordnung ueber den TYP, nicht ueber die Position: Wer letztes Mal einen
+// zweiten Warm-Up eingeschoben oder Rest-Pause-Runden angehaengt hat,
+// verschiebt sonst alle Indizes — dann bekaeme der HIT-Satz den Wert eines
+// Warm-Ups oder einer RP-Runde vorbelegt.
+function findPrevSet(prev, slot, i){
+  if(!prev || !prev.length || !slot.saetze || !slot.saetze[i]) return null;
+  var ziel = normType(slot.saetze[i].type);
+
+  // Der wievielte Satz dieses Typs ist es im aktuellen Slot?
+  var rang = 0;
+  for(var j=0;j<i;j++){
+    if(slot.saetze[j] && normType(slot.saetze[j].type) === ziel) rang++;
+  }
+
+  var gleicherTyp = [];
+  for(var k=0;k<prev.length;k++){
+    var r = prev[k];
+    if(!r || !r.kg || !r.wdh) continue;
+    if(normType(r.type) === ziel) gleicherTyp.push(r);
+  }
+  // Gibt es weniger Saetze dieses Typs als diesmal, gilt der letzte davon.
+  if(gleicherTyp.length) return gleicherTyp[Math.min(rang, gleicherTyp.length-1)];
+
+  // Kein Satz desselben Typs in der Historie — dann sinnvoll ausweichen:
+  // Arbeitssaetze auf den schwersten, Warm-Ups auf den leichtesten Satz.
+  var kandidaten = prev.filter(function(r){ return r && r.kg && r.wdh; });
+  if(!kandidaten.length) return null;
+  if(ziel === "wu"){
+    return kandidaten.reduce(function(a,b){ return parseFloat(b.kg) < parseFloat(a.kg) ? b : a; });
+  }
+  var ohneWu = kandidaten.filter(function(r){ return normType(r.type) !== "wu"; });
+  var pool = ohneWu.length ? ohneWu : kandidaten;
+  return pool.reduce(function(a,b){ return parseFloat(b.kg) > parseFloat(a.kg) ? b : a; });
+}
+
 function getSetTarget(slot, prev, i){
-  if(!prev||!prev[i]) return null;
-  var r=prev[i];
+  var r = findPrevSet(prev, slot, i);
+  if(!r) return null;
   if(!r.kg||!r.wdh) return null;
   var kg=parseFloat(r.kg), wdh=parseInt(r.wdh,10);
   if(!kg||!wdh) return null;
@@ -4276,19 +4312,24 @@ function getLastDataByPosition(planId,pairIdx,slotIdx){
   return null;
 }
 
+// Liefert {kg,wdh} aus der Historie fuer einen bestimmten Satz.
+// Zuordnung ueber den Satztyp (siehe findPrevSet), damit ein HIT-Satz nie den
+// Wert einer Rest-Pause-Runde bekommt. Uebungsname schlaegt Position: so
+// ueberlebt die Zuordnung einen Uebungstausch oder eine Planaenderung.
 function getLastKgWdh(planId,pairIdx,slotIdx,satzIdx){
-  // Returns {kg,wdh} for a specific satz index from history, falling back to any logged satz
+  var slot = workout.plan && workout.plan.paare[pairIdx]
+           ? workout.plan.paare[pairIdx].slots[slotIdx] : null;
+  var prev = slot ? getLastData(planId, pairIdx, slotIdx, slot.ueb) : null;
+  if(prev && slot){
+    var r = findPrevSet(prev, slot, satzIdx);
+    if(r && r.kg!==undefined) return r;
+  }
+  // Ohne laufendes Workout (z. B. Vorschau) bleibt nur die Position
   for(var i=state.history.length-1;i>=0;i--){
     var h=state.history[i];
     if(h.planId===planId&&h.sets){
-      var k=pairIdx+"_"+slotIdx;
-      var arr=h.sets[k];
-      if(arr){
-        // Try exact satz index first
-        if(arr[satzIdx]&&arr[satzIdx].kg!==undefined) return arr[satzIdx];
-        // Fall back to last logged satz of same wu type (to find a WS for WS, WU for WU)
-        for(var j=arr.length-1;j>=0;j--){if(arr[j]) return arr[j];}
-      }
+      var arr=h.sets[pairIdx+"_"+slotIdx];
+      if(arr && arr[satzIdx] && arr[satzIdx].kg!==undefined) return arr[satzIdx];
     }
   }
   return null;
@@ -4546,6 +4587,48 @@ function getJustCompletedSatz(){
   return slot.saetze[justDoneIdx]||null;
 }
 
+// Zielwert eines noch nicht ausgefuehrten Satzes: erst der vorbelegte Wert,
+// sonst die Progressionsvorgabe aus der Historie.
+function satzZielwert(pi, si, idx){
+  if(!workout.plan) return null;
+  var slot = workout.plan.paare[pi] ? workout.plan.paare[pi].slots[si] : null;
+  if(!slot || !slot.saetze || !slot.saetze[idx]) return null;
+  var d = workout.data[pi+"_"+si+"_"+idx];
+  if(d && d.kg && d.wdh) return {kg:d.kg, wdh:d.wdh};
+  var prev = getLastData(workout.plan.id, pi, si, slot.ueb);
+  if(!prev) return null;
+  return getSetTarget(slot, prev, idx);
+}
+
+// Die Uebung nach dem aktuellen Paar, samt Gewicht ihres ersten Satzes.
+function naechsteUebungVorschau(){
+  if(!workout.plan) return null;
+  var paare = workout.plan.paare || [];
+  // Steht im aktuellen Paar noch ein Satz an, ist nichts "danach" zu zeigen.
+  var pair = paare[workout.pairIdx];
+  if(pair){
+    var offen = pair.slots.some(function(s){
+      return s.kat!=="— (leer)" && s.saetze && s.saetze[workout.satzIdx];
+    });
+    if(offen) return null;
+  }
+  for(var pi=workout.pairIdx+1; pi<paare.length; pi++){
+    var slots = paare[pi].slots || [];
+    for(var si=0; si<slots.length; si++){
+      var slot = slots[si];
+      if(slot.kat==="— (leer)" || !slot.saetze || !slot.saetze.length) continue;
+      var satz = slot.saetze[0];
+      return {
+        name: slot.ueb,
+        ziel: satzZielwert(pi, si, 0),
+        typ:  satzTypeLabel(satz),
+        farbe: satzTypeColor(satz)
+      };
+    }
+  }
+  return null;
+}
+
 function updateNextPreview(){
   var plan=workout.plan,pair=plan.paare[workout.pairIdx];
   var el=document.getElementById("next-exes");
@@ -4570,7 +4653,14 @@ function updateNextPreview(){
     if(satz&&!nextSatzType) nextSatzType=satz;
 
     var satzLbl=satz?(' <span style="font-size:10px;font-weight:700;letter-spacing:1px;color:'+satzTypeColor(satz)+'">'+satzTypeLabel(satz)+'</span>'):'';
-    var wdhLbl=satz?(' <span style="color:var(--t-mid);font-size:10px">· '+(satz.wdh||"—")+'</span>'):'';
+    // Gewicht gehoert dazu: waehrend der Pause wird die Maschine eingestellt.
+    var zielLbl="";
+    if(satz){
+      var z=satzZielwert(workout.pairIdx, si, nextSni);
+      zielLbl = z
+        ? ' <span style="color:var(--white);font-size:12px;font-family:var(--t-mono)">· '+z.kg+' kg × '+z.wdh+'</span>'
+        : ' <span style="color:var(--t-mid);font-size:10px">· '+(satz.wdh||"—")+'</span>';
+    }
 
     // Show previous HIT performance for next HIT satz
     var hitNote="";
@@ -4578,8 +4668,21 @@ function updateNextPreview(){
       var lastH=getLastKgWdh(plan.id,workout.pairIdx,si,nextSni);
       if(lastH) hitNote='<div style="font-size:10px;color:#FFD700;margin-top:3px;font-family:var(--t-mono)">⬆ Vorwoche: '+lastH.kg+'kg × '+lastH.wdh+' → übertreffen</div>';
     }
-    html+='<div class="next-ex">'+slot.ueb+satzLbl+wdhLbl+hitNote+'</div>';
+    html+='<div class="next-ex">'+esc(slot.ueb)+satzLbl+zielLbl+hitNote+'</div>';
   });
+
+  // Ist das Paar durch, zeigt die Vorschau die naechste Uebung samt Warm-Up-
+  // Gewicht — damit die Maschine schon waehrend der Pause eingestellt wird.
+  var danach = naechsteUebungVorschau();
+  if(danach){
+    html += '<div style="margin-top:10px;padding-top:9px;border-top:1px solid var(--t-bdr)">'+
+      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t-mid);font-family:var(--t-mono)">Danach</div>'+
+      '<div class="next-ex" style="margin-top:4px">'+esc(danach.name)+
+      (danach.ziel
+        ? ' <span style="color:var(--white);font-size:12px;font-family:var(--t-mono)">· '+danach.ziel.kg+' kg × '+danach.ziel.wdh+'</span>'
+        : '')+
+      ' <span style="font-size:10px;font-weight:700;letter-spacing:1px;color:'+danach.farbe+'">'+danach.typ+'</span></div></div>';
+  }
   if(el) el.innerHTML=html||'<div style="color:var(--t-mid);font-size:12px">— Ende —</div>';
 
   if(lbl){
