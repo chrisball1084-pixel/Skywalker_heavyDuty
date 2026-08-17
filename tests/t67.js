@@ -85,7 +85,7 @@ ok("Runde im Eintrag", typeof last.mesoWeek==="number");
 w.saveState(); w.loadState&&w.loadState();
 ok("Körpergewicht übersteht Speichern", w.state.bodyWeight===73.5);
 ok("Zyklusstart übersteht Speichern", typeof w.state.cycleStart==="number");
-ok("Version v6.9.2", w.APP_VERSION==="v6.9.2");
+ok("Version v6.9.3", w.APP_VERSION==="v6.9.3");
 
 console.log("\n"+"=".repeat(48));
 console.log(fails.length===0?"ALLE TESTS BESTANDEN":"FEHLGESCHLAGEN ("+fails.length+"): "+fails.join(" | "));

@@ -1410,7 +1410,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.9.2";
+var APP_VERSION = "v6.9.3";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -3201,6 +3201,49 @@ function confirmValue(key){
   if(d && d.pre) delete d.pre;
 }
 
+// Trifft die Vorbelegung genau, fasst niemand die Felder an — dann bliebe
+// pre:true stehen und finishWorkout() wuerfe den Satz weg. Genau so ist am
+// 11.8. ein Topsatz verschwunden. Ein vorbelegter Satz, auf den im selben
+// Slot ein eingetragener Satz folgt, wurde nachweislich ausgefuehrt: eine
+// Rest-Pause oder ein Back-off setzt den Satz davor voraus.
+function bestaetigeImpliziteSaetze(){
+  if(!workout.plan) return 0;
+  var n=0;
+  workout.plan.paare.forEach(function(pair,pi){
+    pair.slots.forEach(function(slot,si){
+      if(!slot.saetze) return;
+      var letzterEchte=-1;
+      slot.saetze.forEach(function(_,i){
+        var d=workout.data[pi+"_"+si+"_"+i];
+        if(d && d.kg && d.wdh && !d.pre) letzterEchte=i;
+      });
+      if(letzterEchte<0) return;
+      for(var i=0;i<letzterEchte;i++){
+        var d=workout.data[pi+"_"+si+"_"+i];
+        if(d && d.pre && d.kg && d.wdh){ delete d.pre; n++; }
+      }
+    });
+  });
+  if(n) saveActiveWorkout();
+  return n;
+}
+
+// Alle vorbelegten Saetze eines Slots bestaetigen. Gedacht fuer den Moment,
+// in dem eine Rest-Pause oder ein Back-off angehaengt wird: Dann ist auch der
+// unmittelbar davorliegende Satz gelaufen, obwohl noch kein spaeterer Satz
+// existiert, der ihn belegen wuerde.
+function bestaetigeSlotSaetze(pi, si){
+  var slot = workout.plan && workout.plan.paare[pi] ? workout.plan.paare[pi].slots[si] : null;
+  if(!slot || !slot.saetze) return 0;
+  var n=0;
+  slot.saetze.forEach(function(_,i){
+    var d=workout.data[pi+"_"+si+"_"+i];
+    if(d && d.pre && d.kg && d.wdh){ delete d.pre; n++; }
+  });
+  if(n) saveActiveWorkout();
+  return n;
+}
+
 function renderFocus(){
   if(!focusCtx) return;
   var pi=focusCtx.pi, si=focusCtx.si;
@@ -3225,11 +3268,13 @@ function renderFocus(){
     var lastH=lastSessionForPlan(workout.plan.id);
     var prevLabel = lastH ? ("W"+(lastH.mesoWeek||"?")+" · "+lastH.date) : "Letzte Einheit";
     html+='<div class="prev-wrap"><div class="prev-lbl">'+prevLabel+'</div><div class="prev-cards">';
+    // Markiert wird der Vorwert zum Satz, an dem du gerade stehst — waehrend
+    // des Warm-Ups also der Warm-Up, danach der Topsatz. Zuordnung ueber den
+    // Typ, damit sie auch bei abweichender Satzzahl stimmt.
+    var aktiv = findPrevSet(prev, slot, naechsterOffenerSatz(pi, si));
     prev.forEach(function(r,i){
       if(!r||!r.kg||!r.wdh) return;
-      var sn = slot.saetze[i] ? shortSatzName(slot.saetze[i]) : ("S"+(i+1));
-      var isHit = normType(r.type||(slot.saetze[i]&&slot.saetze[i].type))==="hit";
-      html+='<div class="prev-card'+(isHit?" current":"")+'"><div class="prev-card-lbl">'+sn+'</div>';
+      html+='<div class="prev-card'+(r===aktiv?" current":"")+'"><div class="prev-card-lbl">'+prevSatzLabel(r,i)+'</div>';
       html+='<div class="prev-card-kg">'+r.kg+'kg</div><div class="prev-card-wdh">'+r.wdh+'×</div></div>';
     });
     html+='</div></div>';
@@ -3443,6 +3488,30 @@ function findPrevSet(prev, slot, i){
   return pool.reduce(function(a,b){ return parseFloat(b.kg) > parseFloat(a.kg) ? b : a; });
 }
 
+// Der Satz, an dem du gerade stehst: der erste noch nicht eingetragene.
+function naechsterOffenerSatz(pi, si){
+  var slot = workout.plan && workout.plan.paare[pi] ? workout.plan.paare[pi].slots[si] : null;
+  if(!slot || !slot.saetze) return 0;
+  for(var i=0;i<slot.saetze.length;i++){
+    if(!isSetDone(workout.data[pi+"_"+si+"_"+i])) return i;
+  }
+  return slot.saetze.length-1;
+}
+// Kurzname aus dem GESPEICHERTEN Satztyp — nicht aus der Position im
+// aktuellen Plan. Sonst heisst ein Back-off "S3", sobald sich die Satzzahl
+// zwischen den Einheiten unterscheidet.
+function prevSatzLabel(r, fallbackIdx){
+  if(!r || !r.type) return "S"+(fallbackIdx+1);
+  switch(normType(r.type)){
+    case "wu":  return "WU";
+    case "hit": return "HIT";
+    case "bo":  return "BO";
+    case "rp":  return "RP";
+    case "ws":  return "WS";
+    default:    return "S"+(fallbackIdx+1);
+  }
+}
+
 function getSetTarget(slot, prev, i){
   var r = findPrevSet(prev, slot, i);
   if(!r) return null;
@@ -3463,6 +3532,9 @@ function getSetTarget(slot, prev, i){
 // eingetragenen Satzes (TOP oder vorherige RP-Runde).
 function addRestPause(pi, si){
   var slot = workout.plan.paare[pi].slots[si];
+  // Wer eine Rest-Pause anhaengt, hat die Saetze davor gemacht — auch die,
+  // deren Vorbelegung genau gepasst hat und die deshalb nie angefasst wurden.
+  bestaetigeSlotSaetze(pi, si);
   var newIdx = slot.saetze.length;
   slot.saetze.push(mkRP());
 
@@ -4052,10 +4124,10 @@ function renderCurrent(){
       }
       var prevLabel=lastH?"W"+(lastH.mesoWeek||"?")+" · "+lastH.date:"Letzte Einheit";
       html+='<div class="prev-wrap"><div class="prev-lbl">'+prevLabel+'</div><div class="prev-cards">';
+      var aktivG = findPrevSet(prevData, slot, sni);
       prevData.forEach(function(s,i){
         if(!s) return;
-        var sn=slot.saetze[i]?shortSatzName(slot.saetze[i]):("S"+(i+1));
-        html+='<div class="prev-card'+(i===sni?" current":"")+'"><div class="prev-card-lbl">'+sn+'</div>';
+        html+='<div class="prev-card'+(s===aktivG?" current":"")+'"><div class="prev-card-lbl">'+prevSatzLabel(s,i)+'</div>';
         html+='<div class="prev-card-kg">'+s.kg+'kg</div><div class="prev-card-wdh">'+s.wdh+'×</div></div>';
       });
       html+='</div></div>';
@@ -4818,6 +4890,8 @@ function finishWorkout(){
   if(workout.plan && !isFreeMode(workout.plan)){
     document.querySelectorAll(".ex-block").forEach(function(block){storeBlock(block,parseInt(block.dataset.slot),workout.satzIdx);});
   }
+  // Vorbelegte Saetze, die nachweislich ausgefuehrt wurden, nicht verwerfen
+  bestaetigeImpliziteSaetze();
   var plan=workout.plan;
   var endTimeStr=new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
   var elapsed=Math.round((Date.now()-workout.startTime)/60000);
