@@ -42,10 +42,16 @@ ok("vorgeschlagener Split ist offen", offenNamen.some(n=>n && next.indexOf(n)>=0
 console.log("\n[5] Progression je Übung");
 const prog=H("dash-prog");
 ok("Zeilen vorhanden", prog.indexOf("pg-row")>=0);
-ok("1RM in kg ausgewiesen", /pg-val">\d+ kg/.test(prog));
-ok("Sparkline gezeichnet", prog.indexOf("pg-spark")>=0);
-ok("Delta mit Vorzeichen", /[▲▼→]\s*[+\-]?\d+ kg/.test(prog));
+ok("1RM als Zahl ausgewiesen", /pg-val">\d+</.test(prog));
+ok("Miniaturkurve gezeichnet", prog.indexOf("pg-mini")>=0 && prog.indexOf("<polyline")>=0);
+ok("Delta mit Vorzeichen", /[▲▼→]\s*[+\-]?\d+</.test(prog));
+ok("Bestgewicht genannt", prog.indexOf("Bestgewicht")>=0);
+ok("Zeile ist antippbar", prog.indexOf("openExDetail(")>=0);
 ok("nach Plan gruppiert", /Chest & Back|Legs|Shoulders & Arms/.test(prog));
+ok("jeder Trainingstag nur einmal als Überschrift", (()=>{
+  const h=[...prog.matchAll(/color:var(--t-acc);font-weight:700[^>]*>([^<]+)</g)].map(m=>m[1]);
+  return h.length===new Set(h).size;
+})());
 
 console.log("\n[6] Bestwerte");
 const best=H("dash-best");

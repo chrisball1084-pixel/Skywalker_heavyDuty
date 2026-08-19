@@ -415,6 +415,20 @@ html.theme-arnold .done-btn.copy{background:#F5A623;color:#000}
 .pg-delta.flat{color:var(--gold)}
 .pg-delta.down{color:var(--t-acc)}
 .pg-spark{display:flex;align-items:flex-end;gap:2px;height:20px;margin-top:6px}
+.pg-mini{width:78px;height:24px;flex-shrink:0}
+.pg-best{color:var(--gold)}
+.pg-chev{color:var(--t-mid);font-size:15px;line-height:1;flex-shrink:0;margin-left:2px}
+.exd-hd{font-family:var(--t-mono);font-size:15px;font-weight:700;color:var(--white)}
+.exd-sub{font-size:10px;color:var(--t-mid);margin-top:2px}
+.exd-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin:13px 0 3px;font-family:var(--t-mono)}
+.exd-chart{width:100%;height:56px;display:block}
+.exd-ax{display:flex;justify-content:space-between;font-size:9px;color:var(--t-mid);font-family:var(--t-mono);margin-top:2px}
+.exd-list{margin-top:14px;max-height:34vh;overflow-y:auto}
+.exd-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-top:1px solid var(--t-bdr);font-size:12px;font-family:var(--t-mono)}
+.exd-row .d{color:var(--t-mid);font-size:11px}
+.exd-row .s{color:var(--white)}
+.exd-row .r{color:var(--t-acc2);font-weight:700}
+.exd-row.top .s{color:var(--gold)}
 .pg-bar{flex:1;background:var(--t-acc2);opacity:.45;min-height:2px}
 .pg-bar.last{opacity:1}
 .dash-kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 20px}
@@ -1106,6 +1120,14 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
   </div>
 </div>
 
+<div class="overlay" id="exd-overlay" onclick="closeExDetail(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="padding:20px;padding-bottom:calc(20px + var(--sb))">
+    <div class="modal-handle"></div>
+    <div id="exd-body"></div>
+    <button class="rp-close-btn" onclick="closeExDetail()">Schließen</button>
+  </div>
+</div>
+
 <!-- ══ DASHBOARD ══ -->
 <div class="screen" id="dash-screen">
   <div class="generic-hdr">
@@ -1410,7 +1432,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.9.4";
+var APP_VERSION = "v6.10.0";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -2933,7 +2955,20 @@ function renderDashProgression(){
   });
 
   if(!zeilen.length){ el.innerHTML='<div class="dash-note">Noch zu wenig Daten im laufenden Zyklus.</div>'; return; }
-  zeilen.sort(function(a,b){ return b.proz - a.proz; });
+  // Erst nach Trainingstag in Planreihenfolge, dann innerhalb des Tages nach
+  // Fortschritt. Sortiert man nur nach Fortschritt, zerfaellt die Gruppierung
+  // in mehrere Bloecke desselben Tages.
+  var planRang = {};
+  (state.plans||[]).forEach(function(p,i){ planRang[p.id] = i; });
+  zeilen.sort(function(a,b){
+    var ra = planRang[a.u.planId], rb = planRang[b.u.planId];
+    if(ra===undefined) ra = 99;
+    if(rb===undefined) rb = 99;
+    if(ra !== rb) return ra - rb;
+    return b.proz - a.proz;
+  });
+  dashZeilen = zeilen;
+  zeilen.forEach(function(z,i){ z.idx = i; });
 
   var html="", aktuellerPlan=null;
   zeilen.forEach(function(z){
@@ -2946,22 +2981,75 @@ function renderDashProgression(){
     // Die Randfarbe zeigt die Lage insgesamt: Stagnation schlaegt eine einzelne
     // gute Einheit, weil sie bei Heavy Duty das Signal zum Wechsel ist.
     var klasse = z.stagniert ? "flat" : richtung;
-    html += '<div class="pg-row '+klasse+'">';
+    var topKg = z.p.reduce(function(a,x){ return Math.max(a, parseFloat(x.kg)||0); },0);
+    html += '<div class="pg-row '+klasse+'" onclick="openExDetail('+z.idx+')">';
     html += '<div class="pg-top"><div class="pg-name">'+esc(z.u.name)+'</div>';
-    html += '<div class="pg-val">'+Math.round(z.letzte.e1rm)+' kg</div></div>';
-    html += '<div class="pg-meta">'+z.letzte.kg+' × '+z.letzte.wdh+(z.letzte.uni?' je Seite':'')+' · '+esc(z.letzte.date)+
-            '  <span class="pg-delta '+richtung+'">'+pfeil+' '+(z.delta>=0?"+":"")+Math.round(z.delta)+' kg vs. zuletzt</span></div>';
+    html += sparkSvg(z.p.slice(-8), 'pg-mini', 'var(--t-acc2)');
+    html += '<div class="pg-val">'+Math.round(z.letzte.e1rm)+'</div><div class="pg-chev">›</div></div>';
+    html += '<div class="pg-meta">'+z.letzte.kg+' × '+z.letzte.wdh+(z.letzte.uni?' je Seite':'')+
+            ' · Bestgewicht <span class="pg-best">'+(Math.round(topKg*10)/10)+' kg</span>'+
+            '  <span class="pg-delta '+richtung+'">'+pfeil+' '+(z.delta>=0?'+':'')+Math.round(z.delta)+'</span></div>';
     if(z.stagniert) html += '<div class="pg-meta" style="color:var(--gold)">kein neuer Bestwert seit 3 Einheiten — Übung wechseln oder Deload</div>';
-    // Sparkline der letzten acht Werte
-    var s = z.p.slice(-8);
-    var max = s.reduce(function(a,x){return Math.max(a,x.e1rm);},0) || 1;
-    html += '<div class="pg-spark">';
-    s.forEach(function(x,i){
-      html += '<div class="pg-bar'+(i===s.length-1?" last":"")+'" style="height:'+Math.max(6, Math.round(x.e1rm/max*100))+'%"></div>';
-    });
-    html += '</div></div>';
+    html += '</div>';
   });
   el.innerHTML = html;
+}
+
+// Miniaturkurve als SVG. Farbe kommt aus dem Theme, damit sie zu jeder
+// Philosophie passt. Ein einzelner Punkt ergibt eine flache Linie.
+function sparkSvg(punkte, klasse, farbe, feld){
+  feld = feld || 'e1rm';
+  var w=100, h=30, pad=3;
+  var werte = (punkte||[]).map(function(p){ return parseFloat(p[feld])||0; });
+  if(!werte.length) return '<svg class="'+klasse+'" viewBox="0 0 '+w+' '+h+'"></svg>';
+  var min = Math.min.apply(null, werte), max = Math.max.apply(null, werte);
+  var spanne = (max-min) || 1;
+  var schritt = werte.length>1 ? (w-2*pad)/(werte.length-1) : 0;
+  var pts = werte.map(function(v,i){
+    var x = pad + i*schritt;
+    var y = (h-pad) - ((v-min)/spanne) * (h-2*pad);
+    return (Math.round(x*10)/10)+','+(Math.round(y*10)/10);
+  });
+  var l = pts[pts.length-1].split(',');
+  return '<svg class="'+klasse+'" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" aria-hidden="true">'+
+    '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+farbe+'" stroke-width="2" '+
+    'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'+
+    '<path d="M'+l[0]+','+l[1]+' L'+l[0]+','+l[1]+'" stroke="'+farbe+'" stroke-width="6" '+
+    'stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
+}
+
+// ── Detailansicht einer Übung ──
+var dashZeilen = [];
+function openExDetail(idx){
+  var z = dashZeilen[idx];
+  if(!z) return;
+  var p = z.p;
+  var topKg = p.reduce(function(a,x){ return Math.max(a, parseFloat(x.kg)||0); },0);
+  var bestE = p.reduce(function(a,x){ return Math.max(a, x.e1rm); },0);
+  var h = '<div class="exd-hd">'+esc(z.u.name)+'</div>';
+  h += '<div class="exd-sub">'+esc(z.u.planName)+' · '+p.length+' Einheiten</div>';
+  h += '<div class="exd-lbl" style="color:var(--t-acc2)">Geschätztes 1RM · '+Math.round(z.letzte.e1rm)+' kg</div>';
+  h += sparkSvg(p, 'exd-chart', 'var(--t-acc2)', 'e1rm');
+  h += '<div class="exd-ax"><span>'+esc(p[0].date)+'</span><span>Bestwert '+Math.round(bestE)+' kg</span></div>';
+  h += '<div class="exd-lbl" style="color:var(--gold)">Topgewicht · '+z.letzte.kg+' kg</div>';
+  h += sparkSvg(p, 'exd-chart', 'var(--gold)', 'kg');
+  h += '<div class="exd-ax"><span>'+esc(p[0].date)+'</span><span>Bestgewicht '+(Math.round(topKg*10)/10)+' kg</span></div>';
+  h += '<div class="exd-list">';
+  p.slice().reverse().forEach(function(x){
+    var istTop = (parseFloat(x.kg)||0) >= topKg;
+    h += '<div class="exd-row'+(istTop?' top':'')+'"><span class="d">'+esc(x.date)+'</span>'+
+         '<span class="s">'+x.kg+' × '+x.wdh+(x.uni?' /Seite':'')+'</span>'+
+         '<span class="r">'+Math.round(x.e1rm)+'</span></div>';
+  });
+  h += '</div>';
+  h += '<div class="dash-note" style="padding:10px 0 0">Cyan ist das geschätzte 1RM — es fasst Gewicht und Wiederholungen zusammen. Gold ist das tatsächlich bewegte Gewicht.</div>';
+  document.getElementById('exd-body').innerHTML = h;
+  document.getElementById('exd-overlay').classList.add('open');
+}
+function closeExDetail(e){
+  if(!e || e.target===document.getElementById('exd-overlay')){
+    document.getElementById('exd-overlay').classList.remove('open');
+  }
 }
 // Liegt das Datum im laufenden Zyklus?
 function istImZyklus(datum){
