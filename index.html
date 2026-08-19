@@ -1410,7 +1410,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.9.3";
+var APP_VERSION = "v6.9.4";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -2835,11 +2835,32 @@ function renderDash(){
 }
 
 // ── 1) Was steht an? ───────────────────────────────────────
+// Welcher Split ist als Naechstes dran?
+// Nicht einfach der erste offene: Ist die Runde gerade voll geworden, sind
+// wieder ALLE offen und die Liste wuerde stur bei Split 1 anfangen. Richtig
+// ist, in der Rotation hinter dem zuletzt trainierten Split weiterzugehen.
+function naechsterSplitId(){
+  var plans = (state.plans||[]).map(function(p){return p.id;});
+  if(!plans.length) return null;
+  var c = cycleProgress();
+  var offen = c.offen.length ? c.offen : plans;
+  var ws = dashWorkouts(), letzter = null;
+  for(var i=ws.length-1;i>=0;i--){
+    if(plans.indexOf(ws[i].planId)>=0){ letzter = ws[i].planId; break; }
+  }
+  var start = letzter ? plans.indexOf(letzter)+1 : 0;
+  for(var k=0;k<plans.length;k++){
+    var id = plans[(start+k)%plans.length];
+    if(offen.indexOf(id)>=0) return id;
+  }
+  return offen[0];
+}
+
 function naechsterSplitHtml(kompakt){
   var c = cycleProgress();
   var ws = dashWorkouts();
   if(!ws.length || !state.plans || !state.plans.length) return "";
-  var offenId = c.offen.length ? c.offen[0] : (state.plans[0]||{}).id;
+  var offenId = naechsterSplitId();
   var plan = state.plans.filter(function(p){return p.id===offenId;})[0];
   if(!plan) return "";
   var idx = state.plans.indexOf(plan);
@@ -3809,10 +3830,48 @@ function abortFreeWorkout(){
   goHome();
 }
 
+// Zaehlt eingetragene und geplante Saetze des laufenden Trainings.
+function workoutFortschritt(){
+  var offen=0, erledigt=0, gesamt=0, offeneUeb=[];
+  if(!workout.plan) return {offen:0, erledigt:0, gesamt:0, offeneUeb:[]};
+  bestaetigeImpliziteSaetze();
+  workout.plan.paare.forEach(function(pair,pi){
+    pair.slots.forEach(function(slot,si){
+      if(slot.kat==="— (leer)"||!slot.saetze||!slot.saetze.length) return;
+      var fehlt=0;
+      slot.saetze.forEach(function(_,i){
+        gesamt++;
+        if(isSetDone(workout.data[pi+"_"+si+"_"+i])) erledigt++;
+        else { offen++; fehlt++; }
+      });
+      if(fehlt) offeneUeb.push(slot.ueb+" ("+fehlt+")");
+    });
+  });
+  return {offen:offen, erledigt:erledigt, gesamt:gesamt, offeneUeb:offeneUeb};
+}
+
 function finishFreeWorkout(){
   dismissRPOverlay();
   focusCtx=null;
-  // In free mode, we don't require all sets to be done — just save what's filled.
+  var f = workoutFortschritt();
+
+  // Nichts eingetragen: Beenden wuerde eine leere Einheit speichern.
+  if(f.erledigt===0){
+    askConfirm("Noch nichts eingetragen",
+      "Es ist kein einziger Satz erfasst. Beim Beenden wird nichts gespeichert.",
+      function(){ pauseFreeTimer(); abortFreeWorkout(); },
+      {icon:"⚠️", yes:"Training verwerfen", no:"Weitertrainieren"});
+    return;
+  }
+  // Luecken: nachfragen statt still speichern.
+  if(f.offen>0){
+    var liste = f.offeneUeb.slice(0,4).join(", ") + (f.offeneUeb.length>4 ? " …" : "");
+    askConfirm("Noch " + f.offen + " von " + f.gesamt + " Sätzen offen",
+      "Offen: " + liste + "\n\nNicht eingetragene Sätze zählen nicht in die Historie.",
+      function(){ pauseFreeTimer(); finishWorkout(); },
+      {icon:"🏁", yes:"Trotzdem beenden", no:"Weitertrainieren"});
+    return;
+  }
   pauseFreeTimer();
   finishWorkout();
 }

@@ -79,13 +79,15 @@ ok("kein confirm() mehr im Deload", fs.readFileSync('index.html','utf8').indexOf
 console.log("\n[9] Abschluss + Persistenz");
 w.closeFocus();
 w.finishFreeWorkout();
+// Seit v6.9.4 fragt ein unvollstaendiges Training nach — bestaetigen
+if(w.document.getElementById("ask-dialog").classList.contains("open")) w.askAnswer(true);
 const last=w.state.history[w.state.history.length-1];
 ok("Einheit gespeichert", last && last.planName==="Chest & Back");
 ok("Runde im Eintrag", typeof last.mesoWeek==="number");
 w.saveState(); w.loadState&&w.loadState();
 ok("Körpergewicht übersteht Speichern", w.state.bodyWeight===73.5);
 ok("Zyklusstart übersteht Speichern", typeof w.state.cycleStart==="number");
-ok("Version v6.9.3", w.APP_VERSION==="v6.9.3");
+ok("Version v6.9.4", w.APP_VERSION==="v6.9.4");
 
 console.log("\n"+"=".repeat(48));
 console.log(fails.length===0?"ALLE TESTS BESTANDEN":"FEHLGESCHLAGEN ("+fails.length+"): "+fails.join(" | "));
