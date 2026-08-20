@@ -50,7 +50,22 @@ ok("neueste zuerst", (()=>{
   return erste===p[p.length-1].date;
 })());
 
-console.log("\n[5] Schlie\u00dfen");
+console.log("\n[5] Bestgewicht bei Gleichstand");
+// Gleiches Gewicht, mehr Wiederholungen, spaeteres Datum \u2014 der spaetere gewinnt.
+// Sonst bliebe RDL 100x8 vom 12.8. als Bestwert stehen, obwohl am 19.8.
+// dieselbe Last mit zwei Wiederholungen mehr bewegt wurde.
+w.state.history=[
+  {type:"workout",planId:"SKY_B",planName:"Legs",date:"1.8.2026",totalVol:0,totalSets:0,
+   slotMeta:{"0_0":"Testuebung"},sets:{"0_0":[{kg:100,wdh:8,type:"hit",name:"HIT Set",wu:false}]}},
+  {type:"workout",planId:"SKY_B",planName:"Legs",date:"8.8.2026",totalVol:0,totalSets:0,
+   slotMeta:{"0_0":"Testuebung"},sets:{"0_0":[{kg:100,wdh:10,type:"hit",name:"HIT Set",wu:false}]}}
+];
+const tb=w.bestwerteJeUebung().find(x=>x.name==="Testuebung");
+ok("bei gleichem Gewicht gewinnt der Satz mit mehr Wdh", tb && +tb.topKg.wdh===10);
+ok("und damit das spaetere Datum", tb && tb.topKg.date==="8.8.2026");
+ok("bestes 1RM kommt vom selben Satz", tb && Math.round(tb.top.e1rm)===133);
+
+console.log("\n[6] Schlie\u00dfen");
 w.closeExDetail();
 ok("Overlay zu", !ov().classList.contains("open"));
 w.openExDetail(999);

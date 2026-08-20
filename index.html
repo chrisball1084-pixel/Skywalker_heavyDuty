@@ -1456,7 +1456,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.11.0";
+var APP_VERSION = "v6.11.1";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -3293,8 +3293,13 @@ function bestwerteJeUebung(){
     b.plaene[u.planName] = true;
     u.punkte.forEach(function(p){
       if(!b.top || p.e1rm > b.top.e1rm) b.top = p;
+      // Bei gleichem Gewicht gewinnt der Satz mit mehr Wiederholungen — sonst
+      // bliebe ein aelterer Eintrag stehen, obwohl spaeter dieselbe Last
+      // sauberer bewegt wurde (RDL 100x8 am 12.8. vs. 100x10 am 19.8.).
       var kg = parseFloat(p.kg)||0;
-      if(!b.topKg || kg > (parseFloat(b.topKg.kg)||0)) b.topKg = p;
+      var bKg = b.topKg ? (parseFloat(b.topKg.kg)||0) : -1;
+      var bWdh = b.topKg ? (parseFloat(b.topKg.wdh)||0) : -1;
+      if(kg > bKg || (kg === bKg && (parseFloat(p.wdh)||0) > bWdh)) b.topKg = p;
     });
   });
   return Object.keys(proUebung).map(function(n){ return proUebung[n]; })
