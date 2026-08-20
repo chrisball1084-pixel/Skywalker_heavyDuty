@@ -433,6 +433,23 @@ html.theme-arnold .done-btn.copy{background:#F5A623;color:#000}
 .hd-set{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--t-bdr);font-family:var(--t-mono);font-size:12px}
 .hd-typ{font-size:9px;font-weight:700;letter-spacing:1px;width:32px;flex-shrink:0;color:var(--t-mid)}
 .hd-typ.hit{color:var(--t-acc)}
+.hist-full{align-items:stretch}
+.hist-sheet{display:flex;flex-direction:column;width:100%;height:100%;background:var(--t-bg);
+  transform:none;transition:none}
+.hist-kopf{flex-shrink:0;padding:calc(12px + var(--st)) 20px 12px;border-bottom:1px solid var(--t-bdr);background:var(--t-sur)}
+.hist-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 20px 16px}
+.hist-leiste{flex-shrink:0;display:flex;gap:8px;padding:12px 20px calc(12px + var(--sb));
+  border-top:1px solid var(--t-bdr);background:var(--t-sur)}
+.hist-leiste button{flex:1;height:46px;border-radius:10px;font-size:13px;font-weight:700;
+  font-family:'Syne',sans-serif;cursor:pointer;border:none}
+.hd-uni{margin:4px 0 2px;padding:5px 10px;font-size:9px;font-weight:700;letter-spacing:1px;
+  font-family:var(--t-mono);background:var(--t-sur);border:1px solid var(--t-bdr2);
+  color:var(--t-mid);cursor:pointer;border-radius:0}
+.hd-uni.on{border-color:var(--t-acc2);color:var(--t-acc2)}
+.hd-sel{height:34px;background:var(--t-sur);border:1px solid var(--t-bdr2);color:var(--white);
+  font-family:var(--t-mono);font-size:11px;font-weight:700;border-radius:0;padding:0 4px;
+  width:58px;flex-shrink:0;-webkit-appearance:none}
+.hd-sel:focus{outline:none;border-color:var(--t-acc2)}
 .hd-typbtn{background:var(--t-sur);border:1px solid var(--t-bdr2);cursor:pointer;height:30px;border-radius:0;font-family:var(--t-mono);font-weight:700;width:38px}
 .hd-val{color:var(--white);flex:1}
 .hd-inp{width:62px;height:34px;background:var(--t-sur);border:1px solid var(--t-bdr2);color:var(--white);
@@ -1137,10 +1154,11 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
   </div>
 </div>
 
-<div class="overlay" id="hist-overlay" onclick="closeHistDetail(event)">
-  <div class="modal" onclick="event.stopPropagation()" style="padding:20px;padding-bottom:calc(20px + var(--sb))">
-    <div class="modal-handle"></div>
-    <div id="hist-body"></div>
+<div class="overlay hist-full" id="hist-overlay">
+  <div class="hist-sheet">
+    <div id="hist-kopf" class="hist-kopf"></div>
+    <div id="hist-body" class="hist-scroll"></div>
+    <div id="hist-bar" class="hist-leiste"></div>
   </div>
 </div>
 
@@ -1456,7 +1474,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.11.1";
+var APP_VERSION = "v6.11.2";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -3081,16 +3099,31 @@ function histSlotKeys(e){
 function renderHistDetail(){
   if(!histCtx) return;
   var e = histCtx.entwurf, bearb = histCtx.bearbeiten;
-  var h = '<div class="exd-hd">'+esc(e.planName||"Workout")+'</div>';
-  h += '<div class="exd-sub">'+esc(e.weekday||"")+' · '+esc(e.date)+
-       (e.startTime? ' · '+esc(e.startTime)+(e.endTime?"–"+esc(e.endTime):"") : "")+'</div>';
-  h += '<div class="exd-sub">'+(e.totalSets||0)+' Sätze · '+Math.round(e.totalVol||0)+' kg'+
-       (e.notiz? ' · '+esc(e.notiz) : "")+'</div>';
+  var scrollEl = document.getElementById("hist-body");
+  // Beim Neuzeichnen bleibt die Scrollposition erhalten. Ohne das springt die
+  // Ansicht nach jeder Aenderung nach oben — bei einem Workout mit sechs
+  // Uebungen ist das unbrauchbar.
+  var pos = scrollEl ? scrollEl.scrollTop : 0;
 
-  h += '<div class="exd-list" style="max-height:46vh">';
+  // ── Kopf ──
+  var kopf = '<div class="exd-hd">'+esc(e.planName||"Workout")+'</div>';
+  kopf += '<div class="exd-sub">'+esc(e.weekday||"")+' · '+esc(e.date)+
+          (e.startTime? ' · '+esc(e.startTime)+(e.endTime?"–"+esc(e.endTime):"") : "")+'</div>';
+  kopf += '<div class="exd-sub">'+(e.totalSets||0)+' Sätze · '+Math.round(e.totalVol||0)+' kg'+
+          (bearb? ' · <span style="color:var(--t-acc2)">Bearbeiten</span>' : "")+'</div>';
+  if(e.notiz) kopf += '<div class="exd-sub" style="margin-top:4px">'+esc(e.notiz)+'</div>';
+  document.getElementById("hist-kopf").innerHTML = kopf;
+
+  // ── Übungen ──
+  var h = "";
   histSlotKeys(e).forEach(function(k){
-    h += '<div class="hd-ueb">'+esc(e.slotMeta[k])+'</div>';
     var arr = e.sets[k];
+    var uni = arr.some(function(r){ return r && r.uni; });
+    h += '<div class="hd-ueb">'+esc(e.slotMeta[k])+'</div>';
+    if(bearb){
+      h += '<button class="hd-uni'+(uni?" on":"")+'" onclick="histToggleUni(\''+k+'\')">'+
+           (uni?"☑":"☐")+' UNILATERAL · WERT JE SEITE</button>';
+    }
     var leer = true;
     arr.forEach(function(r,i){
       if(!r) return;
@@ -3098,12 +3131,13 @@ function renderHistDetail(){
       var typ = normType(r.type);
       h += '<div class="hd-set">';
       if(bearb){
-        h += '<button class="hd-typ hd-typbtn '+(typ==="hit"?"hit":"")+'" '+
-             'onclick="histCycleTyp(\''+k+'\','+i+')" title="Satztyp wechseln">'+prevSatzLabel(r,i)+'</button>';
-      } else {
-        h += '<span class="hd-typ '+(typ==="hit"?"hit":"")+'">'+prevSatzLabel(r,i)+'</span>';
-      }
-      if(bearb){
+        // Auswahlliste statt Durchschalten: Auf dem iPhone oeffnet sich ein Rad
+        // mit allen Typen. Blindes Weiterklicken war nicht nachvollziehbar.
+        h += '<select class="hd-sel" onchange="histSetTyp(\''+k+'\','+i+',this.value)">';
+        HIST_TYPEN.forEach(function(t){
+          h += '<option value="'+t+'"'+(t===typ?" selected":"")+'>'+HIST_KURZ[t]+'</option>';
+        });
+        h += '</select>';
         h += '<input class="hd-inp" type="number" inputmode="decimal" step="0.5" value="'+(r.kg===""?"":r.kg)+'" '+
              'oninput="histSetVal(\''+k+'\','+i+',\'kg\',this.value)">';
         h += '<span style="color:var(--t-mid)">×</span>';
@@ -3111,6 +3145,7 @@ function renderHistDetail(){
              'oninput="histSetVal(\''+k+'\','+i+',\'wdh\',this.value)">';
         h += '<button class="hd-x" onclick="histDelSet(\''+k+'\','+i+')" title="Satz entfernen">×</button>';
       } else {
+        h += '<span class="hd-typ '+(typ==="hit"?"hit":"")+'">'+prevSatzLabel(r,i)+'</span>';
         h += '<span class="hd-val">'+r.kg+' kg × '+r.wdh+(r.uni?' <span style="color:var(--t-mid)">je Seite</span>':"")+'</span>';
       }
       h += '</div>';
@@ -3120,19 +3155,19 @@ function renderHistDetail(){
     if(leer) h += '<div class="hd-note" style="padding-left:0">Kein Satz eingetragen.</div>';
     if(bearb) h += '<button class="hd-add" onclick="histAddSet(\''+k+'\')">+ Satz ergänzen</button>';
   });
-  h += '</div>';
+  scrollEl.innerHTML = h;
+  scrollEl.scrollTop = pos;
 
-  h += '<div class="hd-bar">';
+  // ── Leiste ──
+  var bar = "";
   if(bearb){
-    h += '<button onclick="toggleHistEdit()" style="background:var(--t-card);border:1px solid var(--t-bdr);color:var(--t-mid)">Verwerfen</button>';
-    h += '<button onclick="saveHistDetail()" style="background:var(--t-acc2);color:var(--t-bg)">Speichern</button>';
+    bar += '<button onclick="toggleHistEdit()" style="background:var(--t-card);border:1px solid var(--t-bdr);color:var(--t-mid)">Verwerfen</button>';
+    bar += '<button onclick="saveHistDetail()" style="background:var(--t-acc2);color:var(--t-bg)">Speichern</button>';
   } else {
-    h += '<button onclick="closeHistDetail()" style="background:var(--t-card);border:1px solid var(--t-bdr);color:var(--light)">Schließen</button>';
-    h += '<button onclick="toggleHistEdit()" style="background:var(--t-acc);color:var(--white)">Bearbeiten</button>';
+    bar += '<button onclick="closeHistDetail()" style="background:var(--t-card);border:1px solid var(--t-bdr);color:var(--light)">Schließen</button>';
+    bar += '<button onclick="toggleHistEdit()" style="background:var(--t-acc);color:var(--white)">Bearbeiten</button>';
   }
-  h += '</div>';
-
-  document.getElementById("hist-body").innerHTML = h;
+  document.getElementById("hist-bar").innerHTML = bar;
 }
 
 // Satztyp durchschalten. Wichtig beim Nachtragen: Ein neuer Satz erbt den Typ
@@ -3141,16 +3176,25 @@ function renderHistDetail(){
 // Bestwerte und die Progression, die beide nur HIT-Saetze auswerten.
 var HIST_TYPEN = ["wu","hit","bo","rp","ws"];
 var HIST_NAMEN = {wu:"Warm Up", hit:"HIT Set", bo:"Back-Off", rp:"Rest-Pause", ws:"Working Set"};
-function histCycleTyp(k, i){
+var HIST_KURZ = {wu:"WU", hit:"HIT", bo:"BO", rp:"RP", ws:"WS"};
+function histSetTyp(k, i, typ){
   if(!histCtx) return;
   var arr = histCtx.entwurf.sets[k];
-  if(!arr || !arr[i]) return;
-  var akt = normType(arr[i].type);
-  var pos = HIST_TYPEN.indexOf(akt);
-  var next = HIST_TYPEN[(pos+1) % HIST_TYPEN.length];
-  arr[i].type = next;
-  arr[i].wu   = (next === "wu");
-  arr[i].name = HIST_NAMEN[next];
+  if(!arr || !arr[i] || HIST_TYPEN.indexOf(typ)<0) return;
+  arr[i].type = typ;
+  arr[i].wu   = (typ === "wu");
+  arr[i].name = HIST_NAMEN[typ];
+  renderHistDetail();
+}
+
+// Unilateral gilt fuer die ganze Uebung, nicht fuer einzelne Saetze —
+// genauso wie der Schalter im laufenden Training.
+function histToggleUni(k){
+  if(!histCtx) return;
+  var arr = histCtx.entwurf.sets[k];
+  if(!arr) return;
+  var an = !arr.some(function(r){ return r && r.uni; });
+  arr.forEach(function(r){ if(r) r.uni = an; });
   renderHistDetail();
 }
 

@@ -2,7 +2,12 @@ const {JSDOM}=require('jsdom'), fs=require('fs');
 const dom=new JSDOM(fs.readFileSync('index.html','utf8'),{runScripts:"dangerously",pretendToBeVisual:true,url:"https://u.github.io/sky/"});
 const w=dom.window; let fails=[];
 const ok=(n,c)=>{ if(c) console.log("  ✓ "+n); else {console.log("  ✗ "+n); fails.push(n);} };
-const body=()=>w.document.getElementById("hist-body").innerHTML.replace(/&amp;/g,"&");
+// Die Detailansicht ist seit v6.11.2 dreigeteilt: fester Kopf, scrollende
+// Übungsliste, feste Knopfleiste. Für die Prüfungen zählt sie als eine Ansicht.
+const teile=()=>["hist-kopf","hist-body","hist-bar"].map(id=>{
+  const el=w.document.getElementById(id); return el?el.innerHTML:"";
+}).join("\n");
+const body=()=>teile().replace(/&amp;/g,"&");
 // Beim Speichern werden alle Kennzahlen neu gerechnet — ein gespeicherter
 // Altwert taugt deshalb nicht als Vergleichsbasis.
 const rechne=(e)=>{ let v=0,n=0;
@@ -10,7 +15,9 @@ const rechne=(e)=>{ let v=0,n=0;
     a.forEach(r=>{ if(!r||r.kg===""||r.kg==null||r.wdh===""||r.wdh==null)return;
       let x=parseFloat(r.kg)*parseFloat(r.wdh); if(r.uni)x*=2; v+=x; n++; }); });
   return {vol:Math.round(v*10)/10, sets:n}; };
-const txt=()=>w.document.getElementById("hist-body").textContent;
+const txt=()=>["hist-kopf","hist-body","hist-bar"].map(id=>{
+  const el=w.document.getElementById(id); return el?el.textContent:"";
+}).join("\n");
 const ov=()=>w.document.getElementById("hist-overlay");
 setTimeout(()=>{
 try{
@@ -101,7 +108,52 @@ const vorHalb=w.state.history[idx].totalSets;
 w.saveHistDetail();
 ok("halber Satz wird verworfen", w.state.history[idx].totalSets===vorHalb);
 
-console.log("\n[10] Randfälle");
+console.log("\n[10] Vollbild statt halber Seite");
+ok("Overlay füllt die Höhe", ov().className.indexOf("hist-full")>=0);
+ok("dreigeteilter Aufbau", !!w.document.querySelector(".hist-sheet .hist-kopf") &&
+   !!w.document.querySelector(".hist-sheet .hist-scroll") && !!w.document.querySelector(".hist-sheet .hist-leiste"));
+ok("kein Modal-Griff mehr", !w.document.querySelector("#hist-overlay .modal-handle"));
+
+console.log("\n[11] Satztyp per Auswahlliste");
+w.openHistDetail(idx); w.toggleHistEdit();
+ok("Auswahlliste statt Durchschalt-Knopf", body().indexOf("histSetTyp(")>=0 && body().indexOf("histCycleTyp(")<0);
+ok("alle fünf Typen zur Wahl", ["wu","hit","bo","rp","ws"].every(t=>body().indexOf('value="'+t+'"')>=0));
+const ks=w.histSlotKeys(w.histCtx.entwurf)[0];
+const is=w.histCtx.entwurf.sets[ks].findIndex(r=>r);
+w.histSetTyp(ks,is,"bo");
+ok("Typ direkt setzbar", w.normType(w.histCtx.entwurf.sets[ks][is].type)==="bo");
+ok("Name zieht mit", w.histCtx.entwurf.sets[ks][is].name===w.HIST_NAMEN.bo);
+w.histSetTyp(ks,is,"quatsch");
+ok("unbekannter Typ wird abgelehnt", w.normType(w.histCtx.entwurf.sets[ks][is].type)==="bo");
+
+console.log("\n[12] Unilateral im Editor");
+ok("Schalter je Übung vorhanden", body().indexOf("histToggleUni(")>=0);
+w.histCtx.entwurf.sets[ks].forEach(r=>{ if(r) r.uni=false; });
+w.histToggleUni(ks);
+ok("schaltet alle Sätze der Übung an", w.histCtx.entwurf.sets[ks].filter(Boolean).every(r=>r.uni));
+w.histToggleUni(ks);
+ok("und wieder aus", w.histCtx.entwurf.sets[ks].filter(Boolean).every(r=>!r.uni));
+w.histToggleUni(ks);
+w.saveHistDetail();
+ok("übersteht das Speichern", w.state.history[idx].sets[ks].filter(Boolean).every(r=>r.uni));
+ok("Volumen zählt beide Seiten", (()=>{
+  const e=w.state.history[idx]; let v=0;
+  Object.keys(e.sets).forEach(kx=>{const a=e.sets[kx]; if(!Array.isArray(a))return;
+    a.forEach(r=>{ if(!r||!r.kg||!r.wdh)return; let x=parseFloat(r.kg)*parseFloat(r.wdh); if(r.uni)x*=2; v+=x; });});
+  return Math.abs(v-e.totalVol)<0.5;
+})());
+
+console.log("\n[13] Scrollposition bleibt");
+w.openHistDetail(idx); w.toggleHistEdit();
+const sc=w.document.getElementById("hist-body");
+sc.scrollTop=120;
+w.renderHistDetail();
+ok("springt nach dem Neuzeichnen nicht nach oben", sc.scrollTop===120);
+w.histSetTyp(ks,is,"hit");
+ok("auch nach einer Typ-Änderung nicht", sc.scrollTop===120);
+w.toggleHistEdit();
+
+console.log("\n[14] Randfälle");
 w.closeHistDetail();
 ok("Overlay zu", !ov().classList.contains("open"));
 w.openHistDetail(9999);
