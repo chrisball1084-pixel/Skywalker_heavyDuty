@@ -1,6 +1,6 @@
-// Skywalker Training — Service Worker (v6.10.0)
+// Skywalker Training — Service Worker (v6.11.0)
 // Beim Versionswechsel CACHE-Namen aendern, dann raeumt activate() alles Alte weg.
-var CACHE = "sky-training-v6.10.0";
+var CACHE = "sky-training-v6.11.0";
 var SHELL = ["./", "./index.html", "./manifest.webmanifest",
              "./icon-180.png", "./icon-192.png", "./icon-512.png"];
 

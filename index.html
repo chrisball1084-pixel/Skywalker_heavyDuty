@@ -429,6 +429,23 @@ html.theme-arnold .done-btn.copy{background:#F5A623;color:#000}
 .exd-row .s{color:var(--white)}
 .exd-row .r{color:var(--t-acc2);font-weight:700}
 .exd-row.top .s{color:var(--gold)}
+.hd-ueb{margin-top:14px;font-family:var(--t-mono);font-size:12px;font-weight:700;color:var(--t-acc2)}
+.hd-set{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--t-bdr);font-family:var(--t-mono);font-size:12px}
+.hd-typ{font-size:9px;font-weight:700;letter-spacing:1px;width:32px;flex-shrink:0;color:var(--t-mid)}
+.hd-typ.hit{color:var(--t-acc)}
+.hd-typbtn{background:var(--t-sur);border:1px solid var(--t-bdr2);cursor:pointer;height:30px;border-radius:0;font-family:var(--t-mono);font-weight:700;width:38px}
+.hd-val{color:var(--white);flex:1}
+.hd-inp{width:62px;height:34px;background:var(--t-sur);border:1px solid var(--t-bdr2);color:var(--white);
+  font-family:var(--t-mono);font-size:13px;text-align:center;border-radius:0;-webkit-appearance:none}
+.hd-inp:focus{outline:none;border-color:var(--t-acc2)}
+.hd-x{width:30px;height:30px;flex-shrink:0;border:1px solid var(--t-bdr);background:var(--t-card);
+  color:var(--t-mid);font-size:14px;cursor:pointer;border-radius:0}
+.hd-add{margin-top:6px;width:100%;height:34px;border:1px dashed var(--t-bdr2);background:transparent;
+  color:var(--t-mid);font-size:11px;font-weight:700;font-family:var(--t-mono);cursor:pointer}
+.hd-note{font-size:10px;color:var(--t-mid);margin-top:2px;padding-left:40px;line-height:1.4}
+.hd-bar{display:flex;gap:8px;margin-top:16px}
+.hd-bar button{flex:1;height:44px;border-radius:10px;font-size:12px;font-weight:700;
+  font-family:'Syne',sans-serif;cursor:pointer;border:none}
 .pg-bar{flex:1;background:var(--t-acc2);opacity:.45;min-height:2px}
 .pg-bar.last{opacity:1}
 .dash-kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 20px}
@@ -1120,6 +1137,13 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
   </div>
 </div>
 
+<div class="overlay" id="hist-overlay" onclick="closeHistDetail(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="padding:20px;padding-bottom:calc(20px + var(--sb))">
+    <div class="modal-handle"></div>
+    <div id="hist-body"></div>
+  </div>
+</div>
+
 <div class="overlay" id="exd-overlay" onclick="closeExDetail(event)">
   <div class="modal" onclick="event.stopPropagation()" style="padding:20px;padding-bottom:calc(20px + var(--sb))">
     <div class="modal-handle"></div>
@@ -1432,7 +1456,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.10.0";
+var APP_VERSION = "v6.11.0";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -2281,7 +2305,7 @@ function renderHistory(){
       var color=plan?plan.color:"#888";
       var vol=h.totalVol?Math.round(h.totalVol)+" kg":"";
       var timeStr=(h.startTime&&h.endTime)?" · "+h.startTime+"–"+h.endTime:"";
-      html+='<div class="history-item"><div class="hi-icon" style="color:'+color+'">'+(plan?plan.icon:"🏋️")+'</div>';
+      html+='<div class="history-item" onclick="openHistDetail('+state.history.indexOf(h)+')" style="cursor:pointer"><div class="hi-icon" style="color:'+color+'">'+(plan?plan.icon:"🏋️")+'</div>';
       html+='<div class="hi-info"><div class="hi-name">'+esc(h.planName)+'</div>';
       html+='<div class="hi-meta">'+esc(h.date)+timeStr+' · W'+(h.mesoWeek||1)+' · '+(h.totalSets||0)+' Sätze</div></div>';
       html+='<div class="hi-vol">'+vol+'</div></div>';
@@ -2505,7 +2529,7 @@ function renderStatsRecent(){
       var color=plan?plan.color:"var(--t-acc)";
       var timeStr=(h.startTime&&h.endTime)?" · "+h.startTime+"–"+h.endTime:"";
       var vol=h.totalVol?Math.round(h.totalVol)+" kg":"";
-      html+='<div class="recent-card">';
+      html+='<div class="recent-card" onclick="openHistDetail('+state.history.indexOf(h)+')" style="cursor:pointer">';
       html+='<div class="recent-icon" style="color:'+color+'">'+icon+'</div>';
       html+='<div class="recent-info"><div class="recent-name">'+esc(h.planName||"Workout")+'</div>';
       html+='<div class="recent-meta">'+esc(h.date)+timeStr+' · W'+(h.mesoWeek||1)+' · '+(h.totalSets||0)+' Sätze</div></div>';
@@ -3018,6 +3042,202 @@ function sparkSvg(punkte, klasse, farbe, feld){
     'stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
 }
 
+// ══════════════════════════════════
+// ABGESCHLOSSENE EINHEIT ANSEHEN UND BEARBEITEN
+// Nachtragen war bisher nur ueber einen Backup-Export moeglich. Wer im Gym
+// einen Satz vergisst oder sich vertippt, soll das direkt in der App richten
+// koennen. Gearbeitet wird auf einer Kopie — erst Speichern schreibt zurueck.
+// ══════════════════════════════════
+var histCtx = null;   // {idx, entwurf, bearbeiten}
+
+function openHistDetail(idx){
+  var e = (state.history||[])[idx];
+  if(!e || e.type==="cardio") return;
+  histCtx = { idx:idx, entwurf:JSON.parse(JSON.stringify(e)), bearbeiten:false };
+  renderHistDetail();
+  document.getElementById("hist-overlay").classList.add("open");
+}
+function closeHistDetail(ev){
+  if(ev && ev.target!==document.getElementById("hist-overlay")) return;
+  document.getElementById("hist-overlay").classList.remove("open");
+  histCtx = null;
+}
+function toggleHistEdit(){
+  if(!histCtx) return;
+  histCtx.bearbeiten = !histCtx.bearbeiten;
+  renderHistDetail();
+}
+
+// Slot-Schluessel einer Einheit in stabiler Reihenfolge (0_0, 0_1, 1_0 …)
+function histSlotKeys(e){
+  return Object.keys(e.slotMeta||{}).filter(function(k){
+    return Array.isArray(e.sets[k]);
+  }).sort(function(a,b){
+    var pa=a.split("_").map(Number), pb=b.split("_").map(Number);
+    return (pa[0]-pb[0]) || (pa[1]-pb[1]);
+  });
+}
+
+function renderHistDetail(){
+  if(!histCtx) return;
+  var e = histCtx.entwurf, bearb = histCtx.bearbeiten;
+  var h = '<div class="exd-hd">'+esc(e.planName||"Workout")+'</div>';
+  h += '<div class="exd-sub">'+esc(e.weekday||"")+' · '+esc(e.date)+
+       (e.startTime? ' · '+esc(e.startTime)+(e.endTime?"–"+esc(e.endTime):"") : "")+'</div>';
+  h += '<div class="exd-sub">'+(e.totalSets||0)+' Sätze · '+Math.round(e.totalVol||0)+' kg'+
+       (e.notiz? ' · '+esc(e.notiz) : "")+'</div>';
+
+  h += '<div class="exd-list" style="max-height:46vh">';
+  histSlotKeys(e).forEach(function(k){
+    h += '<div class="hd-ueb">'+esc(e.slotMeta[k])+'</div>';
+    var arr = e.sets[k];
+    var leer = true;
+    arr.forEach(function(r,i){
+      if(!r) return;
+      leer = false;
+      var typ = normType(r.type);
+      h += '<div class="hd-set">';
+      if(bearb){
+        h += '<button class="hd-typ hd-typbtn '+(typ==="hit"?"hit":"")+'" '+
+             'onclick="histCycleTyp(\''+k+'\','+i+')" title="Satztyp wechseln">'+prevSatzLabel(r,i)+'</button>';
+      } else {
+        h += '<span class="hd-typ '+(typ==="hit"?"hit":"")+'">'+prevSatzLabel(r,i)+'</span>';
+      }
+      if(bearb){
+        h += '<input class="hd-inp" type="number" inputmode="decimal" step="0.5" value="'+(r.kg===""?"":r.kg)+'" '+
+             'oninput="histSetVal(\''+k+'\','+i+',\'kg\',this.value)">';
+        h += '<span style="color:var(--t-mid)">×</span>';
+        h += '<input class="hd-inp" type="number" inputmode="numeric" step="1" value="'+(r.wdh===""?"":r.wdh)+'" '+
+             'oninput="histSetVal(\''+k+'\','+i+',\'wdh\',this.value)">';
+        h += '<button class="hd-x" onclick="histDelSet(\''+k+'\','+i+')" title="Satz entfernen">×</button>';
+      } else {
+        h += '<span class="hd-val">'+r.kg+' kg × '+r.wdh+(r.uni?' <span style="color:var(--t-mid)">je Seite</span>':"")+'</span>';
+      }
+      h += '</div>';
+      var n = e.sets[k+"_"+i+"_note"];
+      if(n) h += '<div class="hd-note">'+esc(n)+'</div>';
+    });
+    if(leer) h += '<div class="hd-note" style="padding-left:0">Kein Satz eingetragen.</div>';
+    if(bearb) h += '<button class="hd-add" onclick="histAddSet(\''+k+'\')">+ Satz ergänzen</button>';
+  });
+  h += '</div>';
+
+  h += '<div class="hd-bar">';
+  if(bearb){
+    h += '<button onclick="toggleHistEdit()" style="background:var(--t-card);border:1px solid var(--t-bdr);color:var(--t-mid)">Verwerfen</button>';
+    h += '<button onclick="saveHistDetail()" style="background:var(--t-acc2);color:var(--t-bg)">Speichern</button>';
+  } else {
+    h += '<button onclick="closeHistDetail()" style="background:var(--t-card);border:1px solid var(--t-bdr);color:var(--light)">Schließen</button>';
+    h += '<button onclick="toggleHistEdit()" style="background:var(--t-acc);color:var(--white)">Bearbeiten</button>';
+  }
+  h += '</div>';
+
+  document.getElementById("hist-body").innerHTML = h;
+}
+
+// Satztyp durchschalten. Wichtig beim Nachtragen: Ein neuer Satz erbt den Typ
+// des letzten vorhandenen — war das eine Rest-Pause, muss der nachgetragene
+// Topsatz von Hand auf HIT gestellt werden. Sonst zaehlt er nicht in die
+// Bestwerte und die Progression, die beide nur HIT-Saetze auswerten.
+var HIST_TYPEN = ["wu","hit","bo","rp","ws"];
+var HIST_NAMEN = {wu:"Warm Up", hit:"HIT Set", bo:"Back-Off", rp:"Rest-Pause", ws:"Working Set"};
+function histCycleTyp(k, i){
+  if(!histCtx) return;
+  var arr = histCtx.entwurf.sets[k];
+  if(!arr || !arr[i]) return;
+  var akt = normType(arr[i].type);
+  var pos = HIST_TYPEN.indexOf(akt);
+  var next = HIST_TYPEN[(pos+1) % HIST_TYPEN.length];
+  arr[i].type = next;
+  arr[i].wu   = (next === "wu");
+  arr[i].name = HIST_NAMEN[next];
+  renderHistDetail();
+}
+
+function histSetVal(k, i, feld, wert){
+  if(!histCtx) return;
+  var arr = histCtx.entwurf.sets[k];
+  if(!arr || !arr[i]) return;
+  arr[i][feld] = wert==="" ? "" : (feld==="kg" ? parseFloat(wert) : parseInt(wert,10));
+  if(isNaN(arr[i][feld])) arr[i][feld] = "";
+}
+
+// Neuer Satz uebernimmt Typ und Einarmig-Merker des letzten vorhandenen —
+// meistens haengt man eine weitere Runde derselben Art an.
+function histAddSet(k){
+  if(!histCtx) return;
+  var arr = histCtx.entwurf.sets[k];
+  if(!arr) return;
+  var letzter = null;
+  for(var i=arr.length-1;i>=0;i--){ if(arr[i]){ letzter = arr[i]; break; } }
+  // Fehlt der Uebung noch ein Topsatz, ist das fast immer der nachzutragende.
+  // Erst wenn einer da ist, wird der Typ des letzten Satzes uebernommen.
+  var hatHit = arr.some(function(r){ return r && normType(r.type)==="hit"; });
+  var typ = hatHit ? (letzter ? normType(letzter.type) : "hit") : "hit";
+  arr.push({
+    kg: letzter ? letzter.kg : "",
+    wdh: "",
+    type: typ,
+    name: HIST_NAMEN[typ] || "HIT Set",
+    wu: typ === "wu",
+    uni: letzter ? !!letzter.uni : false
+  });
+  renderHistDetail();
+}
+
+function histDelSet(k, i){
+  if(!histCtx) return;
+  var arr = histCtx.entwurf.sets[k];
+  if(!arr || !arr[i]) return;
+  arr[i] = null;
+  delete histCtx.entwurf.sets[k+"_"+i+"_note"];
+  renderHistDetail();
+}
+
+// Kennzahlen nach derselben Formel wie finishWorkout() neu rechnen.
+function histKennzahlen(e){
+  var tS=0, tV=0, wS=0, wV=0;
+  Object.keys(e.sets||{}).forEach(function(k){
+    var arr = e.sets[k];
+    if(!Array.isArray(arr)) return;
+    arr.forEach(function(r){
+      if(!r || r.kg==="" || r.kg==null || r.wdh==="" || r.wdh==null) return;
+      tS++;
+      var v = parseFloat(r.kg) * parseFloat(r.wdh);
+      if(r.uni) v *= 2;
+      tV += v;
+      if(!r.wu){ wS++; wV += v; }
+    });
+  });
+  e.totalSets = tS;
+  e.totalVol  = Math.round(tV*10)/10;
+  e.wsSets    = wS;
+  e.wsVol     = Math.round(wV*10)/10;
+  return e;
+}
+
+function saveHistDetail(){
+  if(!histCtx) return;
+  var e = histCtx.entwurf;
+  // Saetze ohne beide Werte fallen raus — sie wuerden die Zaehlung verfaelschen
+  Object.keys(e.sets||{}).forEach(function(k){
+    var arr = e.sets[k];
+    if(!Array.isArray(arr)) return;
+    arr.forEach(function(r,i){
+      if(r && (r.kg==="" || r.kg==null || r.wdh==="" || r.wdh==null)) arr[i] = null;
+    });
+  });
+  histKennzahlen(e);
+  state.history[histCtx.idx] = e;
+  saveState();
+  histCtx.bearbeiten = false;
+  renderHistDetail();
+  renderHome();
+  if(typeof renderStats==="function" && document.getElementById("stats-screen").classList.contains("active")) renderStats();
+  if(typeof renderDash==="function" && document.getElementById("dash-screen").classList.contains("active")) renderDash();
+  showToast("Einheit aktualisiert");
+}
+
 // ── Detailansicht einer Übung ──
 var dashZeilen = [];
 function openExDetail(idx){
@@ -3058,24 +3278,45 @@ function istImZyklus(datum){
   return false;
 }
 
-// ── 3) Bestwerte ───────────────────────────────────────────
-function renderDashBest(){
-  var el = document.getElementById("dash-best");
-  if(!el) return;
+// ── 3) Bestwerte ──
+// Ein Rekord gehoert zur UEBUNG, nicht zum Trainingstag. Das RDL lief frueher
+// bei Chest & Back und laeuft jetzt bei Legs — planweise gruppiert erschienen
+// dadurch zwei Eintraege, und der aeltere zeigte einen veralteten Bestwert.
+// Die Progression bleibt bewusst planweise getrennt: Dieselbe Uebung wird an
+// verschiedenen Tagen mit verschiedenen Gewichten gefahren.
+function bestwerteJeUebung(){
   var map = dashUebungsVerlauf();
-  var beste = Object.keys(map).map(function(k){
-    var u = map[k], top = null;
-    u.punkte.forEach(function(p){ if(!top || p.e1rm>top.e1rm) top = p; });
-    return {name:u.name, planName:u.planName, top:top};
-  }).filter(function(x){ return x.top; });
+  var proUebung = {};
+  Object.keys(map).forEach(function(k){
+    var u = map[k];
+    var b = proUebung[u.name] || (proUebung[u.name] = {name:u.name, plaene:{}, top:null, topKg:null});
+    b.plaene[u.planName] = true;
+    u.punkte.forEach(function(p){
+      if(!b.top || p.e1rm > b.top.e1rm) b.top = p;
+      var kg = parseFloat(p.kg)||0;
+      if(!b.topKg || kg > (parseFloat(b.topKg.kg)||0)) b.topKg = p;
+    });
+  });
+  return Object.keys(proUebung).map(function(n){ return proUebung[n]; })
+    .filter(function(b){ return b.top; });
+}
+
+function renderDashBest(){
+  var el = document.getElementById('dash-best');
+  if(!el) return;
+  var beste = bestwerteJeUebung();
   if(!beste.length){ el.innerHTML='<div class="dash-note">Noch keine Bestwerte.</div>'; return; }
   beste.sort(function(a,b){ return b.top.e1rm - a.top.e1rm; });
-  var html="";
+  var html='<div class="dash-note" style="padding-top:0">Große Zahl: geschätztes 1RM aus dem besten HIT-Satz. Darunter das schwerste tatsächlich bewegte Gewicht.</div>';
   beste.slice(0,12).forEach(function(b){
+    var plaene = Object.keys(b.plaene);
     html += '<div class="pg-row">';
     html += '<div class="pg-top"><div class="pg-name">'+esc(b.name)+'</div>';
     html += '<div class="pg-val">'+Math.round(b.top.e1rm)+' kg</div></div>';
-    html += '<div class="pg-meta">'+b.top.kg+' × '+b.top.wdh+(b.top.uni?' je Seite':'')+' · '+esc(b.top.date)+' · '+esc(b.planName)+'</div>';
+    html += '<div class="pg-meta">1RM aus '+b.top.kg+' × '+b.top.wdh+(b.top.uni?' je Seite':'')+' · '+esc(b.top.date)+'</div>';
+    html += '<div class="pg-meta">Bestgewicht <span class="pg-best">'+b.topKg.kg+' kg</span> × '+b.topKg.wdh+
+            (b.topKg.uni?' je Seite':'')+' · '+esc(b.topKg.date)+'</div>';
+    if(plaene.length>1) html += '<div class="pg-meta" style="color:var(--t-mid)">gelaufen bei: '+esc(plaene.join(', '))+'</div>';
     html += '</div>';
   });
   el.innerHTML = html;
@@ -3447,7 +3688,7 @@ function renderFocus(){
   // Einarmig: eine Zeile, Werte gelten je Seite — Volumen wird verdoppelt.
   html+='<div class="fo-uni-row">';
   html+='<button class="fo-uni'+(slot.unilat?" on":"")+'" onclick="toggleUnilateral('+pi+','+si+')">';
-  html+=(slot.unilat?"☑":"☐")+' EINARMIG · WERTE JE SEITE</button>';
+  html+=(slot.unilat?"☑":"☐")+' UNILATERAL · WERT JE SEITE</button>';
   html+='</div>';
 
   document.getElementById("focus-body").innerHTML=html;
@@ -3768,7 +4009,7 @@ function toggleUnilateral(pi, si){
   slot.unilat = !slot.unilat;
   saveActiveWorkout();
   if(focusCtx) renderFocus(); else renderFreeWorkout();
-  showToast(slot.unilat ? "Einarmig — Werte gelten je Seite" : "Beidseitig");
+  showToast(slot.unilat ? "Unilateral — Wert gilt je Seite" : "Beidseitig");
 }
 
 function deleteSet(pi, si, i){
