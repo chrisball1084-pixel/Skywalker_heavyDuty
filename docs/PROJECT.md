@@ -10,6 +10,7 @@ Skywalker Training ist ein persönlicher Trainingstracker als iPhone-PWA für He
 - Das zugehörige Notion-Dokument ist die Product Source of Truth für neue Ideen, Bugs, offene Anforderungen, Produktentscheidungen und den aktuellen Produktstatus.
 - Der Code ist maßgeblich dafür, was tatsächlich implementiert ist. Notion-Anforderungen müssen deshalb immer gegen den aktuellen Code geprüft werden.
 - Historische Notion-Changelogs nur lesen, wenn sie für die aktuelle Aufgabe relevant sind.
+- Notion ist **keine Langzeithistorie**; Git/GitHub übernimmt diese Rolle.
 
 ## Architektur
 
@@ -102,17 +103,25 @@ Da Nutzerdaten lokal gespeichert werden, müssen Updates die bestehende Datenstr
 - Keine API-Keys, Tokens, Passwörter oder sonstige Secrets in dieses Repository, Agent-Dateien oder Notion-Arbeitsdokumente schreiben.
 - Persönliche Trainingsdaten nur soweit notwendig im Repository halten und bestehende Backup-/Testdaten nicht unnötig vervielfältigen.
 
+## Notion Retention / Housekeeping
+
+- `CURRENT STATE` aktualisieren/ersetzen statt Statusabsätze anzuhängen.
+- Verarbeitete `INBOX`-Punkte und erledigte `OPEN`-Punkte entfernen.
+- `PRODUCT DECISIONS` nur für dauerhaft relevantes Produktwissen verwenden.
+- `CHANGELOG` auf **maximal 10 relevante Einträge bzw. ungefähr 60 Tage** begrenzen.
+- Alte Test-/Versions-/Implementierungsprotokolle nicht in Notion aufbewahren; Git/GitHub ist die vollständige Historie.
+
 ## Notion-Sync-Workflow
 
 Der Befehl **„Notion Sync durchführen“** bedeutet:
 
 1. `AGENTS.md` bzw. `CLAUDE.md` und dieses Dokument lesen.
-2. Im zugehörigen Notion Product Hub primär `CURRENT STATE`, `INBOX`, `OPEN` sowie bei Bedarf relevante `PRODUCT DECISIONS` lesen.
-3. Historischen Changelog nur bei tatsächlichem Bedarf lesen.
+2. Im zugehörigen Notion Product Hub primär `CURRENT STATE`, `INBOX`, `OPEN`, `WAITING FOR ME` sowie bei Bedarf relevante `PRODUCT DECISIONS` lesen.
+3. Historische Quellen nur bei tatsächlichem Bedarf lesen.
 4. Neue Punkte gegen den aktuellen Code verifizieren.
 5. Punkte als Bug, Feature, Verbesserung, Frage oder notwendige Nutzerentscheidung klassifizieren.
 6. Eindeutig definierte Änderungen möglichst klein und getrennt implementieren.
 7. Relevante Tests ausführen.
 8. Dieses Dokument nur bei dauerhaft relevanten technischen Änderungen aktualisieren.
-9. Notion aufräumen: Current State aktualisieren, erledigte Punkte abschließen, Entscheidungsbedarf nach `WAITING FOR ME`, Changelog kompakt ergänzen.
+9. Notion gemäß Retention-Regel aufräumen und kompakt aktualisieren.
 10. Abschließend Änderungen, Tests und offene Nutzerentscheidungen kurz berichten.
