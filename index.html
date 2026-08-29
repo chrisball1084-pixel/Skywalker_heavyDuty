@@ -1474,7 +1474,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.11.2";
+var APP_VERSION = "v6.11.3";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -1985,8 +1985,14 @@ function applyTheme(philId){
 // SCREENS
 // ══════════════════════════════════
 function showScreen(id){
+  // Erst pruefen, dann umschalten. Vorher wurde bei allen Screens .active
+  // entfernt und danach auf dem Ziel zugegriffen — fehlte die ID, blieb die
+  // App ohne sichtbaren Screen zurueck und wirkte abgestuerzt.
+  var ziel = document.getElementById(id);
+  if(!ziel){ console.warn("showScreen: unbekannter Screen \"" + id + "\""); return false; }
   document.querySelectorAll(".screen").forEach(function(s){s.classList.remove("active");});
-  document.getElementById(id).classList.add("active");
+  ziel.classList.add("active");
+  return true;
 }
 
 // ══════════════════════════════════
@@ -5901,8 +5907,10 @@ function startNewCycleAndEdit(){
   resetCycleHere();
   closeMesoDone();
   renderHome();
-  if(typeof openPlanPicker==="function") openPlanPicker();
-  else showScreen("plans");
+  // Die Plaene werden in den Einstellungen bearbeitet — einen eigenen
+  // "plans"-Screen gab es nie, der Aufruf lief deshalb ins Leere.
+  renderSettings();
+  showScreen("settings-screen");
   showToast("🔄 Neuer Zyklus · Übungen anpassen");
 }
 
