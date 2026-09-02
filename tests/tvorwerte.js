@@ -57,7 +57,14 @@ const a=sl.saetze.findIndex(s=>s.type==="wu"), b=sl.saetze.findIndex(s=>s.type==
 w.workout.data["0_0_"+a]={kg:36,wdh:10,pre:false};
 w.workout.data["0_0_"+b]={kg:60,wdh:9,pre:true};      // exakt übernommen, nie angefasst
 w.addRestPause(0,0);
-ok("HIT gilt jetzt als eingetragen", !w.workout.data["0_0_"+b].pre);
+// Das blosse Anhaengen einer Rest-Pause belegt noch nichts: Wer sie anlegt und
+// dann doch abbricht, haette sonst einen nie ausgefuehrten HIT-Satz als
+// erledigt in der Historie. Erst Werte IM Folgesatz sind der Nachweis.
+ok("HIT bleibt vorerst Vorbelegung", w.workout.data["0_0_"+b].pre===true);
+const iRP=w.workout.plan.paare[0].slots[0].saetze.length-1;
+w.workout.data["0_0_"+iRP]={kg:60,wdh:3,pre:false};
+w.bestaetigeImpliziteSaetze();
+ok("mit eingetragener Rest-Pause gilt der HIT als ausgeführt", !w.workout.data["0_0_"+b].pre);
 ok("Werte unverändert", +w.workout.data["0_0_"+b].kg===60 && +w.workout.data["0_0_"+b].wdh===9);
 
 console.log("\n[6] Ohne Nachweis wird nichts erfunden");

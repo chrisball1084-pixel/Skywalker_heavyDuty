@@ -642,6 +642,10 @@ html.theme-mentzer .toast{background:#ff0090;box-shadow:0 0 20px rgba(255,0,144,
 
 .fo-set{background:var(--t-card);border:1px solid var(--t-bdr);padding:11px 12px;margin-bottom:10px}
 .fo-set.done{opacity:.62;border-color:rgba(0,245,255,.28)}
+.fo-typ{height:26px;background:var(--t-sur);border:1px solid var(--t-bdr2);color:var(--t-acc2);
+  font-family:var(--t-mono);font-size:10px;font-weight:700;border-radius:0;padding:0 3px;
+  width:52px;flex-shrink:0;-webkit-appearance:none;margin-right:7px}
+.fo-typ:focus{outline:none;border-color:var(--t-acc2)}
 .fo-set-hdr{display:flex;align-items:baseline;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .fo-set-lbl{font-family:var(--t-mono);font-size:12px;font-weight:700;color:var(--sc,var(--t-acc));letter-spacing:.5px}
 .fo-set-target{font-family:var(--t-mono);font-size:10px;color:var(--t-mid)}
@@ -1474,7 +1478,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.11.3";
+var APP_VERSION = "v6.12.0";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -2651,7 +2655,7 @@ function renderFreeExercise(pair, pi, slot, si, exNum){
   html += '</div>';
 
   // Zielzeile (nur solange nicht abgeschlossen)
-  var prev = getLastData(workout.plan.id, pi, si, slot.ueb);
+  var prev = getLastData(workout.plan.id, pi, si, slot.ueb, !!slot.unilat);
   var goal = getProgressionGoal(slot, prev, pi, si);
   if(goal && !allDone){
     html += '<div class="fw-goal'+(goal.hit?' hit':'')+'">';
@@ -2888,12 +2892,29 @@ function dashUebungsVerlauf(){
         if(!best || e>best.e1rm) best = {e1rm:e, kg:parseFloat(s.kg), wdh:parseFloat(s.wdh), uni:!!s.uni};
       });
       if(!best) return;
+      // Welche Zusatzsaetze liefen neben dem Topsatz? Ein HIT mit Back-off oder
+      // Rest-Pause ist eine andere Einheit als ein HIT allein — das gehoert in
+      // die Detailansicht, sonst sieht man nur die halbe Arbeit.
+      var zusatz = [];
+      arr.forEach(function(s2){
+        if(!s2 || !s2.kg || !s2.wdh) return;
+        var t2 = normType(s2.type);
+        if((t2==="bo" || t2==="rp") && zusatz.indexOf(t2)<0) zusatz.push(t2);
+      });
       var key = (h.planId||"?") + "||" + name;
       if(!map[key]) map[key] = {planId:h.planId, planName:h.planName||"—", name:name, punkte:[]};
-      map[key].punkte.push({date:h.date, e1rm:best.e1rm, kg:best.kg, wdh:best.wdh, uni:best.uni});
+      map[key].punkte.push({date:h.date, e1rm:best.e1rm, kg:best.kg, wdh:best.wdh, uni:best.uni, zusatz:zusatz});
     });
   });
   return map;
+}
+
+// "+BO" / "+RP" hinter einem Satz: zeigt, ob neben dem Topsatz noch
+// Back-off- oder Rest-Pause-Runden gelaufen sind.
+function zusatzMarker(p){
+  if(!p || !p.zusatz || !p.zusatz.length) return "";
+  return ' <span style="color:var(--gold);font-size:10px;font-weight:700">+'+
+         p.zusatz.join("+").toUpperCase()+'</span>';
 }
 
 function renderDash(){
@@ -3034,7 +3055,7 @@ function renderDashProgression(){
     html += '<div class="pg-top"><div class="pg-name">'+esc(z.u.name)+'</div>';
     html += sparkSvg(z.p.slice(-8), 'pg-mini', 'var(--t-acc2)');
     html += '<div class="pg-val">'+Math.round(z.letzte.e1rm)+'</div><div class="pg-chev">›</div></div>';
-    html += '<div class="pg-meta">'+z.letzte.kg+' × '+z.letzte.wdh+(z.letzte.uni?' je Seite':'')+
+    html += '<div class="pg-meta">'+z.letzte.kg+' × '+z.letzte.wdh+(z.letzte.uni?' je Seite':'')+zusatzMarker(z.letzte)+
             ' · Bestgewicht <span class="pg-best">'+(Math.round(topKg*10)/10)+' kg</span>'+
             '  <span class="pg-delta '+richtung+'">'+pfeil+' '+(z.delta>=0?'+':'')+Math.round(z.delta)+'</span></div>';
     if(z.stagniert) html += '<div class="pg-meta" style="color:var(--gold)">kein neuer Bestwert seit 3 Einheiten — Übung wechseln oder Deload</div>';
@@ -3308,7 +3329,7 @@ function openExDetail(idx){
   p.slice().reverse().forEach(function(x){
     var istTop = (parseFloat(x.kg)||0) >= topKg;
     h += '<div class="exd-row'+(istTop?' top':'')+'"><span class="d">'+esc(x.date)+'</span>'+
-         '<span class="s">'+x.kg+' × '+x.wdh+(x.uni?' /Seite':'')+'</span>'+
+         '<span class="s">'+x.kg+' × '+x.wdh+(x.uni?' /Seite':'')+zusatzMarker(x)+'</span>'+
          '<span class="r">'+Math.round(x.e1rm)+'</span></div>';
   });
   h += '</div>';
@@ -3575,7 +3596,7 @@ function isBodyweight(ueb){ return BODYWEIGHT_EX.indexOf(ueb)>=0; }
 
 function prefillSlot(pi, si){
   var slot=workout.plan.paare[pi].slots[si];
-  var prev=getLastData(workout.plan.id, pi, si, slot.ueb);
+  var prev=getLastData(workout.plan.id, pi, si, slot.ueb, !!slot.unilat);
   // Eigengewichtsuebungen: Koerpergewicht als Startwert, auch ohne Historie
   if(isBodyweight(slot.ueb) && state.bodyWeight){
     slot.saetze.forEach(function(satz,i){
@@ -3655,7 +3676,7 @@ function renderFocus(){
   var slot=workout.plan.paare[pi].slots[si];
   var list=focusSlotList();
   var idx=list.findIndex(function(x){return x.pi===pi&&x.si===si;});
-  var prev=getLastData(workout.plan.id, pi, si, slot.ueb);
+  var prev=getLastData(workout.plan.id, pi, si, slot.ueb, !!slot.unilat);
 
   document.getElementById("focus-ex-name").textContent=slot.ueb;
   document.getElementById("focus-ex-kat").textContent=(slot.kat||"");
@@ -3709,6 +3730,13 @@ function renderFocus(){
 
     html+='<div class="fo-set'+(isSetDone(d)?" done":"")+'" style="--sc:'+col+'">';
     html+='<div class="fo-set-hdr">';
+    // Satzart aenderbar: Ein nachtraeglich hinzugefuegter Satz bekam sonst
+    // eine feste Art und liess sich nicht mehr in HIT oder Back-off drehen.
+    html+='<select class="fo-typ" onchange="focusSetTyp('+pi+','+si+','+i+',this.value)">';
+    HIST_TYPEN.forEach(function(t){
+      html+='<option value="'+t+'"'+(t===type?" selected":"")+'>'+HIST_KURZ[t]+'</option>';
+    });
+    html+='</select>';
     html+='<span class="fo-set-lbl">'+lbl+'</span>';
     html+='<span class="fo-set-target">'+esc(satz.wdh||"")+' Wdh</span>';
     html+='</div>';
@@ -3937,9 +3965,12 @@ function getSetTarget(slot, prev, i){
 // eingetragenen Satzes (TOP oder vorherige RP-Runde).
 function addRestPause(pi, si){
   var slot = workout.plan.paare[pi].slots[si];
-  // Wer eine Rest-Pause anhaengt, hat die Saetze davor gemacht — auch die,
-  // deren Vorbelegung genau gepasst hat und die deshalb nie angefasst wurden.
-  bestaetigeSlotSaetze(pi, si);
+  // Hier wurden frueher alle vorbelegten Saetze des Slots bestaetigt, in der
+  // Annahme, eine Rest-Pause belege die Saetze davor. Das griff zu weit: Wer
+  // nur den Warm-Up gemacht hat und eine Rest-Pause anhaengt, bekam den noch
+  // offenen HIT-Satz als "erledigt" angezeigt. Die Bestaetigung laeuft jetzt
+  // ausschliesslich ueber bestaetigeImpliziteSaetze() — dort gilt ein Satz
+  // erst als ausgefuehrt, wenn ein SPAETERER Satz echte Werte traegt.
   var newIdx = slot.saetze.length;
   slot.saetze.push(mkRP());
 
@@ -4058,10 +4089,27 @@ function addWarmUp(pi, si){
   if(focusCtx) renderFocus(); else renderFreeWorkout();
 }
 
+// Satzart im laufenden Training aendern. Beschriftung, Farbe und Warm-Up-Merker
+// ziehen mit — Letzterer entscheidet, ob der Satz ins effektive Volumen zaehlt.
+function focusSetTyp(pi, si, i, typ){
+  var slot = workout.plan.paare[pi].slots[si];
+  var satz = slot.saetze[i];
+  if(!satz || HIST_TYPEN.indexOf(typ) < 0) return;
+  satz.type = typ;
+  satz.wu   = (typ === "wu");
+  satz.name = HIST_NAMEN[typ];
+  saveActiveWorkout();
+  if(focusCtx) renderFocus(); else renderFreeWorkout();
+}
+
 // Einarmige Ausfuehrung: Werte gelten je Seite, Volumen zaehlt doppelt.
 function toggleUnilateral(pi, si){
   var slot = workout.plan.paare[pi].slots[si];
   slot.unilat = !slot.unilat;
+  // Vorbelegung neu ziehen: Nach dem Umschalten passen die Gewichte der alten
+  // Ausfuehrungsart nicht mehr. prefillSlot() laesst bereits eingetragene
+  // Werte unberuehrt und ersetzt nur die Vorschlaege.
+  prefillSlot(pi, si);
   saveActiveWorkout();
   if(focusCtx) renderFocus(); else renderFreeWorkout();
   showToast(slot.unilat ? "Unilateral — Wert gilt je Seite" : "Beidseitig");
@@ -4785,12 +4833,22 @@ function goBackSatz(){
   }
 }
 
-function getLastData(planId,pairIdx,slotIdx,exerciseName){
+function getLastData(planId,pairIdx,slotIdx,exerciseName,uni){
   // Liefert alle Saetze DIESER Uebung aus der juengsten passenden Einheit.
   // Wichtig: dieselbe Uebung kann in mehreren Plaenen vorkommen (z.B. Latzug am
   // Back-Day mit mehr Gewicht als am Arms-Day). Deshalb zuerst NUR im selben Plan
   // suchen; erst wenn dort nichts liegt, planuebergreifend (fuer getauschte Uebungen).
+  // Wird die Uebung einbeinig gefahren, sind die Gewichte der beidbeinigen
+  // Einheiten unbrauchbar als Vorgabe — und umgekehrt. Deshalb zuerst nach
+  // einer Einheit mit derselben Ausfuehrungsart suchen. Erst wenn es keine
+  // gibt, wird wie bisher die juengste Einheit genommen.
   if(exerciseName){
+    if(uni!==undefined){
+      var g=findLastByName(exerciseName, planId, uni);
+      if(g) return g;
+      g=findLastByName(exerciseName, null, uni);
+      if(g) return g;
+    }
     var hit=findLastByName(exerciseName, planId);      // 1. Wahl: gleicher Plan
     if(hit) return hit;
     hit=findLastByName(exerciseName, null);            // 2. Wahl: irgendein Plan
@@ -4800,15 +4858,22 @@ function getLastData(planId,pairIdx,slotIdx,exerciseName){
 }
 
 // Juengste Einheit mit dieser Uebung. onlyPlan=null durchsucht alle Plaene.
-function findLastByName(exerciseName, onlyPlan){
+// uniWunsch (true/false) verlangt zusaetzlich dieselbe Ausfuehrungsart;
+// undefined nimmt die juengste Einheit unabhaengig davon.
+function findLastByName(exerciseName, onlyPlan, uniWunsch){
   for(var i=state.history.length-1;i>=0;i--){
     var h=state.history[i];
     if(!h.sets||!h.slotMeta) continue;
     if(onlyPlan && h.planId!==onlyPlan) continue;
     for(var k in h.slotMeta){
-      if(h.slotMeta[k]===exerciseName && h.sets[k] && h.sets[k].some(function(s){return s;})){
-        return h.sets[k];
+      if(h.slotMeta[k]!==exerciseName) continue;
+      var arr=h.sets[k];
+      if(!arr || !arr.some(function(s){return s;})) continue;
+      if(uniWunsch!==undefined){
+        var istUni = arr.some(function(s){ return s && s.uni; });
+        if(istUni !== !!uniWunsch) continue;
       }
+      return arr;
     }
   }
   return null;
@@ -5110,7 +5175,7 @@ function satzZielwert(pi, si, idx){
   if(!slot || !slot.saetze || !slot.saetze[idx]) return null;
   var d = workout.data[pi+"_"+si+"_"+idx];
   if(d && d.kg && d.wdh) return {kg:d.kg, wdh:d.wdh};
-  var prev = getLastData(workout.plan.id, pi, si, slot.ueb);
+  var prev = getLastData(workout.plan.id, pi, si, slot.ueb, !!slot.unilat);
   if(!prev) return null;
   return getSetTarget(slot, prev, idx);
 }
