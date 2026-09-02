@@ -436,6 +436,40 @@ html.theme-arnold .done-btn.copy{background:#F5A623;color:#000}
 .hist-full{align-items:stretch}
 .hist-sheet{display:flex;flex-direction:column;width:100%;height:100%;background:var(--t-bg);
   transform:none;transition:none}
+.vl-filter{display:flex;gap:6px;padding:0 20px 10px;flex-wrap:wrap}
+.vl-pill{padding:5px 11px;border:1px solid var(--t-bdr2);background:var(--t-card);color:var(--t-mid);
+  font-size:11px;font-weight:700;cursor:pointer;font-family:var(--t-mono)}
+.vl-pill.active{background:var(--t-acc);border-color:var(--t-acc);color:var(--white)}
+.vl-item{margin:0 20px 7px;background:var(--t-card);border:1px solid var(--t-bdr);border-left:3px solid var(--c,var(--t-bdr2))}
+.vl-item.open{border-color:var(--t-acc2)}
+.vl-head{display:flex;align-items:center;gap:11px;padding:11px 13px;cursor:pointer}
+.vl-ico{font-size:20px;line-height:1;flex-shrink:0}
+.vl-main{flex:1;min-width:0}
+.vl-plan{font-size:13px;font-weight:700;color:var(--white);font-family:var(--t-mono)}
+.vl-datum{font-size:10px;color:var(--t-mid);margin-top:1px}
+.vl-sum{font-size:10px;color:var(--t-acc2);margin-top:3px;font-family:var(--t-mono)}
+.vl-chev{color:var(--t-mid);font-size:13px;flex-shrink:0;transition:transform .15s}
+.vl-item.open .vl-chev{transform:rotate(180deg)}
+.vl-body{padding:0 13px 12px;border-top:1px solid var(--t-bdr)}
+.vl-ueb{margin-top:11px}
+.vl-ueb-kopf{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.vl-ueb-name{font-size:12px;font-weight:700;color:var(--white);font-family:var(--t-mono)}
+.vl-ueb-vol{font-size:10px;color:var(--t-mid);font-family:var(--t-mono);white-space:nowrap}
+.vl-satz{display:flex;justify-content:space-between;gap:8px;font-size:11px;font-family:var(--t-mono);padding:3px 0}
+.vl-satz .t{color:var(--t-mid);width:34px;flex-shrink:0}
+.vl-satz .t.hit{color:var(--t-acc)}
+.vl-satz .v{color:var(--light);flex:1}
+.vl-notiz{font-size:10px;color:var(--t-mid);padding-left:34px;line-height:1.4}
+.vl-gesamt{display:flex;justify-content:space-between;margin-top:12px;padding-top:9px;border-top:1px solid var(--t-bdr);
+  font-size:12px;font-weight:700;font-family:var(--t-mono);color:var(--t-acc2)}
+.vl-akt{display:flex;gap:8px;margin-top:11px}
+.vl-akt button{flex:1;height:38px;border-radius:9px;font-size:12px;font-weight:700;
+  font-family:'Syne',sans-serif;cursor:pointer;border:1px solid var(--t-bdr);background:var(--t-sur);color:var(--light)}
+.vl-akt button.del{color:var(--t-acc);border-color:var(--t-acc)}
+.vl-kpi{display:flex;gap:8px;padding:0 20px 12px}
+.vl-kpi div{flex:1;background:var(--t-card);border:1px solid var(--t-bdr);padding:9px 11px}
+.vl-kpi b{display:block;font-size:16px;font-family:var(--t-mono);color:var(--white)}
+.vl-kpi span{font-size:9px;color:var(--t-mid);letter-spacing:1px;text-transform:uppercase}
 .hist-kopf{flex-shrink:0;padding:calc(12px + var(--st)) 20px 12px;border-bottom:1px solid var(--t-bdr);background:var(--t-sur)}
 .hist-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 20px 16px}
 .hist-leiste{flex-shrink:0;display:flex;gap:8px;padding:12px 20px calc(12px + var(--sb));
@@ -896,7 +930,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
     <div id="plan-list"></div>
     <div class="sec">Cardio</div>
     <div id="cardio-list"></div>
-    <div class="sec">Letzte Einheiten</div>
+    <div class="sec" style="display:flex;justify-content:space-between;align-items:baseline"><span>Letzte Einheiten</span><span onclick="renderVerlauf();showScreen('verlauf-screen')" style="color:var(--t-acc2);cursor:pointer;letter-spacing:1px">Alle ›</span></div>
     <div id="history-list"></div>
     <div style="height:16px"></div>
   </div>
@@ -1171,6 +1205,19 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
     <div class="modal-handle"></div>
     <div id="exd-body"></div>
     <button class="rp-close-btn" onclick="closeExDetail()">Schließen</button>
+  </div>
+</div>
+
+<div class="screen" id="verlauf-screen">
+  <div class="generic-hdr">
+    <button class="back-btn" onclick="showScreen('home')">‹</button>
+    <div class="generic-hdr-title">Verlauf</div>
+  </div>
+  <div class="scroll" style="padding-top:14px">
+    <div class="vl-kpi" id="vl-kpi"></div>
+    <div class="vl-filter" id="vl-filter"></div>
+    <div id="vl-list"></div>
+    <div style="height:24px"></div>
   </div>
 </div>
 
@@ -1478,7 +1525,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.12.0";
+var APP_VERSION = "v6.13.0";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -3085,6 +3132,147 @@ function sparkSvg(punkte, klasse, farbe, feld){
     'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'+
     '<path d="M'+l[0]+','+l[1]+' L'+l[0]+','+l[1]+'" stroke="'+farbe+'" stroke-width="6" '+
     'stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
+}
+
+// ══════════════════════════════════
+// VERLAUF — alle Einheiten in einer Liste
+// Startseite und Statistik zeigen nur die juengsten fuenf bzw. zehn Einheiten.
+// Hier steht der komplette Verlauf: zugeklappt eine Zusammenfassung, beim
+// Antippen die Uebungen mit allen Saetzen und dem Volumen je Uebung.
+// ══════════════════════════════════
+var verlaufOffen = null;      // Index der aufgeklappten Einheit
+var verlaufFilter = "all";    // "all" oder eine planId
+
+// Volumen eines einzelnen Slots — dieselbe Regel wie ueberall: einarmig
+// zaehlt beide Seiten, Saetze ohne beide Werte zaehlen nicht.
+function slotVolumen(arr){
+  if(!Array.isArray(arr)) return 0;
+  var v=0;
+  arr.forEach(function(r){
+    if(!r || r.kg==="" || r.kg==null || r.wdh==="" || r.wdh==null) return;
+    var x = parseFloat(r.kg)*parseFloat(r.wdh);
+    if(r.uni) x*=2;
+    v+=x;
+  });
+  return v;
+}
+
+function verlaufEinheiten(){
+  var ws = (state.history||[]).map(function(h,i){ return {h:h, idx:i}; })
+    .filter(function(x){ return x.h.type!=="cardio"; });
+  if(verlaufFilter!=="all") ws = ws.filter(function(x){ return x.h.planId===verlaufFilter; });
+  return ws.reverse();   // juengste zuerst
+}
+
+function setVerlaufFilter(pid){
+  verlaufFilter = pid;
+  verlaufOffen = null;
+  renderVerlauf();
+}
+function toggleVerlauf(idx){
+  verlaufOffen = (verlaufOffen===idx) ? null : idx;
+  renderVerlauf();
+}
+
+function renderVerlauf(){
+  var liste = document.getElementById("vl-list");
+  if(!liste) return;
+
+  // Filterleiste
+  var fEl = document.getElementById("vl-filter");
+  if(fEl){
+    var fh = '<div class="vl-pill'+(verlaufFilter==="all"?" active":"")+'" onclick="setVerlaufFilter(\'all\')">Alle</div>';
+    (state.plans||[]).forEach(function(p){
+      fh += '<div class="vl-pill'+(verlaufFilter===p.id?" active":"")+'" onclick="setVerlaufFilter(\''+p.id+'\')">'+esc(p.name)+'</div>';
+    });
+    fEl.innerHTML = fh;
+  }
+
+  var eintraege = verlaufEinheiten();
+
+  // Kennzahlen ueber die gefilterte Auswahl
+  var kEl = document.getElementById("vl-kpi");
+  if(kEl){
+    var vol = eintraege.reduce(function(a,x){ return a+(x.h.totalVol||0); },0);
+    var sae = eintraege.reduce(function(a,x){ return a+(x.h.totalSets||0); },0);
+    kEl.innerHTML = '<div><b>'+eintraege.length+'</b><span>Einheiten</span></div>'+
+      '<div><b>'+(vol/1000).toFixed(1).replace(".",",")+' t</b><span>Volumen</span></div>'+
+      '<div><b>'+sae+'</b><span>Sätze</span></div>';
+  }
+
+  if(!eintraege.length){
+    liste.innerHTML = '<div class="dash-note">Keine Einheiten in dieser Auswahl.</div>';
+    return;
+  }
+
+  var html = "";
+  eintraege.forEach(function(x){
+    var e = x.h, idx = x.idx;
+    var plan = (state.plans||[]).filter(function(p){ return p.id===e.planId; })[0];
+    var offen = (verlaufOffen===idx);
+    var ueb = Object.keys(e.slotMeta||{}).filter(function(k){ return Array.isArray(e.sets[k]); }).length;
+    var sum = ueb+" Übungen · "+(e.totalSets||0)+" Sätze · "+Math.round(e.totalVol||0).toLocaleString("de-DE")+" kg";
+
+    html += '<div class="vl-item'+(offen?" open":"")+'" style="--c:'+(plan?plan.color:"var(--t-bdr2)")+'">';
+    html += '<div class="vl-head" onclick="toggleVerlauf('+idx+')">';
+    html += '<div class="vl-ico">'+(plan?plan.icon:"🏋️")+'</div>';
+    html += '<div class="vl-main"><div class="vl-plan">'+esc(e.planName||"Workout")+'</div>';
+    html += '<div class="vl-datum">'+esc(e.weekday||"")+' · '+esc(e.date)+
+            (e.startTime? ' · '+esc(e.startTime)+(e.endTime?"–"+esc(e.endTime):"") : "")+'</div>';
+    html += '<div class="vl-sum">'+sum+'</div></div>';
+    html += '<div class="vl-chev">⌄</div></div>';
+
+    if(offen){
+      html += '<div class="vl-body">';
+      histSlotKeys(e).forEach(function(k, n){
+        var arr = e.sets[k];
+        var v = slotVolumen(arr);
+        html += '<div class="vl-ueb"><div class="vl-ueb-kopf">';
+        html += '<span class="vl-ueb-name">'+(n+1)+'. '+esc(e.slotMeta[k])+'</span>';
+        if(v>0) html += '<span class="vl-ueb-vol">'+Math.round(v).toLocaleString("de-DE")+' kg</span>';
+        html += '</div>';
+        var leer = true;
+        arr.forEach(function(r,i){
+          if(!r || !r.kg || !r.wdh) return;
+          leer = false;
+          var t = normType(r.type);
+          html += '<div class="vl-satz"><span class="t'+(t==="hit"?" hit":"")+'">'+prevSatzLabel(r,i)+'</span>';
+          html += '<span class="v">'+r.kg+' kg × '+r.wdh+(r.uni?' <span style="color:var(--t-mid)">je Seite</span>':"")+'</span></div>';
+          var nz = e.sets[k+"_"+i+"_note"];
+          if(nz) html += '<div class="vl-notiz">'+esc(nz)+'</div>';
+        });
+        if(leer) html += '<div class="vl-notiz" style="padding-left:0">Kein Satz eingetragen.</div>';
+      });
+      html += '<div class="vl-gesamt"><span>Session-Volumen</span><span>'+
+              Math.round(e.totalVol||0).toLocaleString("de-DE")+' kg</span></div>';
+      if(e.notiz) html += '<div class="vl-notiz" style="padding-left:0;margin-top:8px">'+esc(e.notiz)+'</div>';
+      html += '<div class="vl-akt">';
+      html += '<button onclick="event.stopPropagation();openHistDetail('+idx+')">Bearbeiten</button>';
+      html += '<button class="del" onclick="event.stopPropagation();verlaufLoeschen('+idx+')">Löschen</button>';
+      html += '</div></div>';
+    }
+    html += '</div>';
+  });
+  liste.innerHTML = html;
+}
+
+// Loeschen ist endgueltig — deshalb immer mit Rueckfrage, und nie ueber
+// confirm(), das die iOS-PWA still verschluckt.
+function verlaufLoeschen(idx){
+  var e = (state.history||[])[idx];
+  if(!e) return;
+  askConfirm("Einheit löschen?",
+    (e.planName||"Einheit")+" vom "+e.date+"\n"+(e.totalSets||0)+" Sätze · "+
+      Math.round(e.totalVol||0)+" kg\n\nDas lässt sich nicht rückgängig machen.",
+    function(){
+      state.history.splice(idx,1);
+      if(verlaufOffen===idx) verlaufOffen=null;
+      saveState();
+      renderVerlauf();
+      renderHome();
+      showToast("Einheit gelöscht");
+    },
+    {icon:"🗑", yes:"Löschen", no:"Behalten"});
 }
 
 // ══════════════════════════════════
