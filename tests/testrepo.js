@@ -21,7 +21,7 @@ ok("App-Shell vorgecacht", sw.includes('SHELL = ["./", "./index.html"'));
 ok("skipWaiting", sw.includes("skipWaiting"));
 ok("alte Caches aufräumen", sw.includes("caches.delete(k)"));
 ok("Offline-Fallback", sw.includes('caches.match("./index.html")'));
-ok("Version im Cache-Namen", sw.includes("sky-training-v6.13.0"));
+ok("Version im Cache-Namen", sw.includes("sky-training-v6.14.0"));
 // SW-Syntax prüfen
 const vm=require('vm');
 const ctx={self:{addEventListener:()=>{},location:{origin:"https://user.github.io"},skipWaiting:()=>{},clients:{claim:()=>{}}},caches:{},fetch:()=>{},Promise};
@@ -31,7 +31,7 @@ catch(e){ ok("sw.js syntaktisch valide: "+e.message, false); }
 
 console.log("\n[3] App läuft weiterhin");
 ok("App initialisiert", typeof w.PHILOSOPHIES==="object");
-ok("Version v6.13.0", w.APP_VERSION==="v6.13.0");
+ok("Version v6.14.0", w.APP_VERSION==="v6.14.0");
 w.state.philId="skywalker"; w.applyTheme("skywalker");
 ok("Theme-Alias aktiv", w.document.documentElement.classList.contains("theme-mentzer"));
 w.state.plans=JSON.parse(JSON.stringify(w.PHILOSOPHIES.skywalker.plans));
@@ -49,7 +49,7 @@ w.focusStepVal("0_0_1","kg",2.5);
 ok("Stepper", w.workout.data["0_0_1"].kg===2.5);
 w.workout.data["0_0_0"]={kg:40,wdh:10};   // ein vollstaendiger Satz
 w.closeFocus(); w.finishFreeWorkout();
-// Unvollstaendiges Training fragt seit v6.13.0 nach — Rueckfrage bestaetigen
+// Unvollstaendiges Training fragt seit v6.14.0 nach — Rueckfrage bestaetigen
 if(w.document.getElementById("ask-dialog").classList.contains("open")) w.askAnswer(true);
 ok("Export", w.document.getElementById("export-text").textContent.split("\n").length>1);
 ok("localStorage nutzbar", w.localStorage.getItem("sw51_hist")!==undefined);

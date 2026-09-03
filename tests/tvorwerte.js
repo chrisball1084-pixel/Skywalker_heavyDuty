@@ -28,8 +28,12 @@ const slot=w.workout.plan.paare[0].slots[0];
 const iWu=slot.saetze.findIndex(s=>s.type==="wu");
 const iHit=slot.saetze.findIndex(s=>s.type==="hit");
 ok("zu Beginn steht der Warm-Up an", w.naechsterOffenerSatz(0,0)===iWu);
+// Seit v6.14.0 gilt: Werte eintragen schliesst einen Satz noch nicht ab.
+// Erst das Abhaken oder Arbeit im naechsten Satz rueckt die Markierung weiter.
 w.workout.data["0_0_"+iWu]={kg:36,wdh:10};
-ok("nach dem Warm-Up rückt der HIT nach", w.naechsterOffenerSatz(0,0)===iHit);
+ok("Werte allein rücken nicht weiter", w.naechsterOffenerSatz(0,0)===iWu);
+w.toggleSetDone("0_0_"+iWu);
+ok("nach dem Abhaken rückt der HIT nach", w.naechsterOffenerSatz(0,0)===iHit);
 
 console.log("\n[3] Fokus-Ansicht markiert eine Karte");
 w.workout.data={};
@@ -41,7 +45,11 @@ const wuMark=/prev-card current"><div class="prev-card-lbl">WU/.test(body());
 ok("und zwar der Warm-Up", wuMark);
 w.workout.data["0_0_"+iWu]={kg:36,wdh:10};
 w.renderFocus();
-ok("nach dem Warm-Up wandert die Markierung", (body().match(/prev-card current/g)||[]).length===1 &&
+ok("beim Einstellen bleibt die Markierung stehen",
+   /prev-card current"><div class="prev-card-lbl">WU/.test(body()));
+w.toggleSetDone("0_0_"+iWu);
+w.renderFocus();
+ok("nach dem Abhaken wandert die Markierung", (body().match(/prev-card current/g)||[]).length===1 &&
    !/prev-card current"><div class="prev-card-lbl">WU/.test(body()));
 
 console.log("\n[4] Fehlt der HIT in der Historie, leuchtet trotzdem etwas");

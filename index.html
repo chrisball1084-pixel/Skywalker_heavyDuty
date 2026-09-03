@@ -676,6 +676,10 @@ html.theme-mentzer .toast{background:#ff0090;box-shadow:0 0 20px rgba(255,0,144,
 
 .fo-set{background:var(--t-card);border:1px solid var(--t-bdr);padding:11px 12px;margin-bottom:10px}
 .fo-set.done{opacity:.62;border-color:rgba(0,245,255,.28)}
+.fo-set.aktiv{opacity:1;border-color:var(--t-acc2);box-shadow:inset 3px 0 0 var(--t-acc2)}
+.fo-state{height:30px;padding:0 12px;border:1px solid var(--t-bdr2);background:var(--t-sur);
+  color:var(--t-mid);font-size:10px;font-weight:700;font-family:var(--t-mono);cursor:pointer;border-radius:0}
+.fo-state.done{border-color:var(--t-acc2);color:var(--t-acc2)}
 .fo-typ{height:26px;background:var(--t-sur);border:1px solid var(--t-bdr2);color:var(--t-acc2);
   font-family:var(--t-mono);font-size:10px;font-weight:700;border-radius:0;padding:0 3px;
   width:52px;flex-shrink:0;-webkit-appearance:none;margin-right:7px}
@@ -1002,7 +1006,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
   </div>
   <div class="done-actions">
     <button class="done-btn copy" onclick="copyExport()">📋 In Zwischenablage kopieren</button>
-    <button class="done-btn home-btn" onclick="goHome()">← Zurück</button>
+    <button class="done-btn home-btn" onclick="goHome()">Beenden</button>
   </div>
 </div>
 
@@ -1525,7 +1529,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.13.0";
+var APP_VERSION = "v6.14.0";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -3649,6 +3653,47 @@ function isSetDone(d){
   if(d.pre) return false;
   return !!(d.kg && d.wdh);
 }
+// Sichtbarer Zustand eines Satzes im laufenden Training.
+// isSetDone() entscheidet, ob ein Satz gespeichert und gezaehlt wird — sobald
+// Gewicht und Wiederholungen stehen. Fuer die ANZEIGE ist das zu frueh: Wer
+// am aktiven Satz die Werte einstellt, wollte ihn damit nicht abhaken.
+// Dunkel wird ein Satz erst, wenn er ausdruecklich abgehakt ist oder wenn
+// im naechsten Satz derselben Uebung bereits gearbeitet wird.
+function satzAbgeschlossen(pi, si, i){
+  var d = workout.data[pi+"_"+si+"_"+i];
+  if(d && d.done===true) return true;
+  var slot = workout.plan && workout.plan.paare[pi] ? workout.plan.paare[pi].slots[si] : null;
+  if(!slot || !slot.saetze) return false;
+  for(var j=i+1; j<slot.saetze.length; j++){
+    var dj = workout.data[pi+"_"+si+"_"+j];
+    if(dj && dj.done===true) return true;
+    if(dj && dj.kg && dj.wdh && !dj.pre) return true;
+  }
+  return false;
+}
+
+// Der Satz, an dem gerade gearbeitet wird: der erste noch nicht abgeschlossene.
+function aktiverSatz(pi, si){
+  var slot = workout.plan && workout.plan.paare[pi] ? workout.plan.paare[pi].slots[si] : null;
+  if(!slot || !slot.saetze) return 0;
+  for(var i=0;i<slot.saetze.length;i++){
+    if(!satzAbgeschlossen(pi, si, i)) return i;
+  }
+  return slot.saetze.length-1;
+}
+
+// Beim Verlassen einer Uebung gilt alles Eingetragene als erledigt — auch
+// wenn nichts abgehakt wurde.
+function uebungAbschliessen(pi, si){
+  var slot = workout.plan && workout.plan.paare[pi] ? workout.plan.paare[pi].slots[si] : null;
+  if(!slot || !slot.saetze) return;
+  slot.saetze.forEach(function(_,i){
+    var d = workout.data[pi+"_"+si+"_"+i];
+    if(d && d.kg && d.wdh && !d.pre) d.done = true;
+  });
+  saveActiveWorkout();
+}
+
 // Letzte abgeschlossene Session desselben Plans
 function lastSessionForPlan(planId){
   for(var i=state.history.length-1;i>=0;i--){
@@ -3705,6 +3750,8 @@ function focusStep(dir){
   var list=focusSlotList();
   var idx=list.findIndex(function(x){return x.pi===focusCtx.pi&&x.si===focusCtx.si;});
   var next=idx+dir;
+  // Die verlassene Uebung gilt als durch — ohne dass jeder Satz abgehakt sein muss.
+  uebungAbschliessen(focusCtx.pi, focusCtx.si);
   if(next<0||next>=list.length){ closeFocus(); return; }
   focusCtx={pi:list[next].pi, si:list[next].si};
   prefillSlot(focusCtx.pi, focusCtx.si);   // auch beim Blaettern vorbelegen
@@ -3916,7 +3963,9 @@ function renderFocus(){
     var col=satzTypeColor(satz);
 
 
-    html+='<div class="fo-set'+(isSetDone(d)?" done":"")+'" style="--sc:'+col+'">';
+    var fertig = satzAbgeschlossen(pi, si, i);
+    var istAktiv = (i === aktiverSatz(pi, si));
+    html+='<div class="fo-set'+(fertig?" done":"")+(istAktiv?" aktiv":"")+'" style="--sc:'+col+'">';
     html+='<div class="fo-set-hdr">';
     // Satzart aenderbar: Ein nachtraeglich hinzugefuegter Satz bekam sonst
     // eine feste Art und liess sich nicht mehr in HIT oder Back-off drehen.
@@ -3942,8 +3991,10 @@ function renderFocus(){
     html+='</div>';
     html+='<div class="fo-set-actions">';
     // Kein Erledigt-Button mehr: ein Satz mit Gewicht und Wdh gilt automatisch als erledigt.
-    var dn=isSetDone(d);
-    html+='<div class="fo-state'+(dn?" done":"")+'">'+(dn?"✓ Erledigt":"Offen")+'</div>';
+    // Abhaken ist wieder ein Knopf: Wert einstellen und Satz abschliessen sind
+    // zwei verschiedene Dinge.
+    html+='<button class="fo-state'+(fertig?" done":"")+'" onclick="toggleSetDone(\''+key+'\')">'+
+           (fertig?"✓ Erledigt":"Erledigt?")+'</button>';
     html+='<button class="fo-rest" onclick="startManualPause('+pi+','+si+')" title="Pause starten">⏱</button>';
     html+='<button class="fo-del" onclick="deleteSet('+pi+','+si+','+i+')" title="Satz löschen">×</button>';
     html+='</div>';
@@ -4111,12 +4162,7 @@ function findPrevSet(prev, slot, i){
 
 // Der Satz, an dem du gerade stehst: der erste noch nicht eingetragene.
 function naechsterOffenerSatz(pi, si){
-  var slot = workout.plan && workout.plan.paare[pi] ? workout.plan.paare[pi].slots[si] : null;
-  if(!slot || !slot.saetze) return 0;
-  for(var i=0;i<slot.saetze.length;i++){
-    if(!isSetDone(workout.data[pi+"_"+si+"_"+i])) return i;
-  }
-  return slot.saetze.length-1;
+  return aktiverSatz(pi, si);
 }
 // Kurzname aus dem GESPEICHERTEN Satztyp — nicht aus der Position im
 // aktuellen Plan. Sonst heisst ein Back-off "S3", sobald sich die Satzzahl

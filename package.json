@@ -4,7 +4,7 @@
   "private": true,
   "description": "Trainingstracker-PWA, eine HTML-Datei ohne Build",
   "scripts": {
-    "test": "node tests/t67.js && node tests/tbug.js && node tests/testimport.js && node tests/testrepo.js && node tests/tsearch.js && node tests/tplan.js && node tests/tuni.js && node tests/tbackupui.js && node tests/tdash.js && node tests/tdeload.js && node tests/tkontrast.js && node tests/tprefill.js && node tests/tpause.js && node tests/tvorwerte.js && node tests/tsplit.js && node tests/tfinish.js && node tests/texdetail.js && node tests/thist.js && node tests/tdeloadedit.js && node tests/tfokus.js && node tests/tverlauf.js"
+    "test": "node tests/t67.js && node tests/tbug.js && node tests/testimport.js && node tests/testrepo.js && node tests/tsearch.js && node tests/tplan.js && node tests/tuni.js && node tests/tbackupui.js && node tests/tdash.js && node tests/tdeload.js && node tests/tkontrast.js && node tests/tprefill.js && node tests/tpause.js && node tests/tvorwerte.js && node tests/tsplit.js && node tests/tfinish.js && node tests/texdetail.js && node tests/thist.js && node tests/tdeloadedit.js && node tests/tfokus.js && node tests/tverlauf.js && node tests/taktiv.js"
   },
   "devDependencies": { "jsdom": "^24.0.0" }
 }
