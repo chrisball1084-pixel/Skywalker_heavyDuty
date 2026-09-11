@@ -676,7 +676,11 @@ html.theme-mentzer .toast{background:#ff0090;box-shadow:0 0 20px rgba(255,0,144,
 
 .fo-set{background:var(--t-card);border:1px solid var(--t-bdr);padding:11px 12px;margin-bottom:10px}
 .fo-set.done{opacity:.62;border-color:rgba(0,245,255,.28)}
-.fo-set.aktiv{opacity:1;border-color:var(--t-acc2);box-shadow:inset 3px 0 0 var(--t-acc2)}
+.fo-set:not(.done):not(.aktiv){opacity:.78}
+.fo-set.aktiv{opacity:1;border-color:var(--t-acc2);
+  box-shadow:inset 3px 0 0 var(--t-acc2),0 0 14px -2px var(--t-acc2)}
+.fo-set.aktiv .fo-set-lbl{text-shadow:0 0 8px currentColor}
+.fo-set.aktiv .step-val.pre{opacity:1}
 .fo-state{height:30px;padding:0 12px;border:1px solid var(--t-bdr2);background:var(--t-sur);
   color:var(--t-mid);font-size:10px;font-weight:700;font-family:var(--t-mono);cursor:pointer;border-radius:0}
 .fo-state.done{border-color:var(--t-acc2);color:var(--t-acc2)}
@@ -808,6 +812,13 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
   color:var(--t-mid);font-family:var(--t-mono);font-size:10px;font-weight:700;
   letter-spacing:1px;cursor:pointer;text-transform:uppercase}
 .fo-uni.on{color:var(--t-acc);border-color:var(--t-acc);border-style:solid}
+.fw-notiz-wrap{margin-top:14px;padding:12px;background:var(--t-card);border:1px solid var(--t-bdr)}
+.fw-notiz{display:block;width:100%;box-sizing:border-box;margin:6px 0 8px;padding:8px;
+  background:var(--t-sur);border:1px solid var(--t-bdr2);color:var(--light);
+  font-family:inherit;font-size:13px;line-height:1.4;border-radius:0;resize:none}
+.fw-notiz:focus{outline:none;border-color:var(--t-acc2)}
+.fremd-badge{display:inline-block;margin-left:6px;padding:1px 6px;border:1px solid var(--gold);
+  color:var(--gold);font-family:var(--t-mono);font-size:8px;letter-spacing:1px;vertical-align:middle}
 .rp-next{margin:14px 0 4px;padding-top:12px;border-top:1px solid var(--t-bdr)}
 .rp-next-lbl{font-family:var(--t-mono);font-size:8px;letter-spacing:2px;color:var(--t-mid)}
 .rp-next-ex{font-family:var(--t-mono);font-size:13px;font-weight:700;color:var(--white);margin-top:4px}
@@ -1183,6 +1194,10 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
         </div>
         <div class="sr-val">›</div>
       </div>
+      <div class="settings-row" onclick="downloadCSV()" style="cursor:pointer;border-top:1px solid var(--t-bdr)">
+        <div class="sr-lbl">📊 CSV-Export (Sheets / Excel)</div>
+        <div class="sr-val">›</div>
+      </div>
       <div class="settings-row" onclick="document.getElementById('backup-input').click()" style="cursor:pointer;border-top:1px solid var(--t-bdr)">
         <div class="sr-lbl">📤 Backup wiederherstellen</div>
         <div class="sr-val">›</div>
@@ -1281,6 +1296,10 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
     <div class="settings-sec">
       <div class="settings-row" onclick="downloadBackup()" style="cursor:pointer">
         <div class="sr-lbl">📥 JSON-Backup herunterladen</div>
+        <div class="sr-val">›</div>
+      </div>
+      <div class="settings-row" onclick="downloadCSV()" style="cursor:pointer;border-top:1px solid var(--t-bdr)">
+        <div class="sr-lbl">📊 CSV-Export (Sheets / Excel)</div>
         <div class="sr-val">›</div>
       </div>
       <div class="settings-row" onclick="document.getElementById('backup-input').click()" style="cursor:pointer;border-top:1px solid var(--t-bdr)">
@@ -1529,7 +1548,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.14.0";
+var APP_VERSION = "v6.15.0";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -1862,7 +1881,7 @@ var MOD_ICON = {Joggen:"🏃",Fahrrad:"🚴",Schwimmen:"🏊",Rucking:"🎒"};
 // STATE
 // ══════════════════════════════════
 var state = {philId:null,plans:null,defaultTimer:120,history:[],mesoWeek:1,forceFree:false,autoPause:true,repCeiling:REP_CEILING_DEFAULT,bodyWeight:null,cycleStart:0};
-var workout = {plan:null,pairIdx:0,satzIdx:0,data:{},swapData:{},startTime:null};
+var workout = {plan:null,pairIdx:0,satzIdx:0,data:{},swapData:{},startTime:null,notiz:"",fremd:false};
 var timer = {endTime:0,total:120,remaining:120,interval:null,paused:false,pausedAt:0};
 var cardioState = {protoId:"zone2",modality:"Joggen",duration:45};
 var activeTab = "overview";
@@ -2000,6 +2019,8 @@ function saveActiveWorkout(){
       swapData:workout.swapData,
       startTime:workout.startTime,
       startTimeStr:workout.startTimeStr,
+      notiz:workout.notiz||"",
+      fremd:!!workout.fremd,
       mesoWeek:state.mesoWeek,
       savedAt:Date.now()
     };
@@ -2678,8 +2699,29 @@ function renderFreeList(){
   });
   if(!html) html = '<div style="padding:30px 14px;text-align:center;color:var(--t-mid);font-size:11px">Keine Übungen. Tippe unten auf "+ Übung".</div>';
   else html += '<div style="padding:4px 4px 0;text-align:center;color:rgba(255,255,255,.28);font-size:9px;font-family:var(--t-mono);letter-spacing:1px">ÜBUNG ANTIPPEN ZUM EINTRAGEN</div>';
+  html += renderWorkoutNotiz();
   el.innerHTML = html;
   attachFreeListeners();
+}
+
+// Notiz zur Einheit + Merker "fremdes Gym". Eine Einheit in fremder Umgebung
+// (Hotel, anderes Studio) hat andere Maschinen und Gewichte — sie darf nicht
+// die Vorgabe fuer das naechste Training im gewohnten Studio werden.
+function renderWorkoutNotiz(){
+  var h = '<div class="fw-notiz-wrap">';
+  h += '<div class="inp-lbl">Notiz zur Einheit</div>';
+  h += '<textarea class="fw-notiz" id="fw-notiz" rows="2" placeholder="z. B. Hotel-Gym, andere Maschinen" '+
+       'oninput="setWorkoutNotiz(this.value)">'+esc(workout.notiz||"")+'</textarea>';
+  h += '<button class="fo-uni'+(workout.fremd?" on":"")+'" onclick="toggleFremd()">'+
+       (workout.fremd?"☑":"☐")+' FREMDES GYM · NICHT ALS VORGABE</button>';
+  h += '</div>';
+  return h;
+}
+function setWorkoutNotiz(v){ workout.notiz = v; saveActiveWorkout(); }
+function toggleFremd(){
+  workout.fremd = !workout.fremd;
+  saveActiveWorkout();
+  renderFreeList();
 }
 
 function renderFreeExercise(pair, pi, slot, si, exNum){
@@ -3220,7 +3262,7 @@ function renderVerlauf(){
     html += '<div class="vl-item'+(offen?" open":"")+'" style="--c:'+(plan?plan.color:"var(--t-bdr2)")+'">';
     html += '<div class="vl-head" onclick="toggleVerlauf('+idx+')">';
     html += '<div class="vl-ico">'+(plan?plan.icon:"🏋️")+'</div>';
-    html += '<div class="vl-main"><div class="vl-plan">'+esc(e.planName||"Workout")+'</div>';
+    html += '<div class="vl-main"><div class="vl-plan">'+esc(e.planName||"Workout")+(e.fremd?'<span class="fremd-badge">FREMD</span>':"")+'</div>';
     html += '<div class="vl-datum">'+esc(e.weekday||"")+' · '+esc(e.date)+
             (e.startTime? ' · '+esc(e.startTime)+(e.endTime?"–"+esc(e.endTime):"") : "")+'</div>';
     html += '<div class="vl-sum">'+sum+'</div></div>';
@@ -3330,11 +3372,21 @@ function renderHistDetail(){
           (e.startTime? ' · '+esc(e.startTime)+(e.endTime?"–"+esc(e.endTime):"") : "")+'</div>';
   kopf += '<div class="exd-sub">'+(e.totalSets||0)+' Sätze · '+Math.round(e.totalVol||0)+' kg'+
           (bearb? ' · <span style="color:var(--t-acc2)">Bearbeiten</span>' : "")+'</div>';
-  if(e.notiz) kopf += '<div class="exd-sub" style="margin-top:4px">'+esc(e.notiz)+'</div>';
+  if(e.fremd) kopf += '<div class="exd-sub" style="margin-top:4px"><span class="fremd-badge" style="margin-left:0">FREMDES GYM · KEINE VORGABE</span></div>';
+  if(e.notiz && !bearb) kopf += '<div class="exd-sub" style="margin-top:4px">'+esc(e.notiz)+'</div>';
   document.getElementById("hist-kopf").innerHTML = kopf;
 
   // ── Übungen ──
   var h = "";
+  if(bearb){
+    h += '<div class="fw-notiz-wrap" style="margin:0 0 12px">';
+    h += '<div class="inp-lbl">Notiz zur Einheit</div>';
+    h += '<textarea class="fw-notiz" rows="2" placeholder="z. B. Hotel-Gym, andere Maschinen" '+
+         'oninput="histSetNotiz(this.value)">'+esc(e.notiz||"")+'</textarea>';
+    h += '<button class="fo-uni'+(e.fremd?" on":"")+'" onclick="histToggleFremd()">'+
+         (e.fremd?"☑":"☐")+' FREMDES GYM · NICHT ALS VORGABE</button>';
+    h += '</div>';
+  }
   histSlotKeys(e).forEach(function(k){
     var arr = e.sets[k];
     var uni = arr.some(function(r){ return r && r.uni; });
@@ -3408,6 +3460,12 @@ function histSetTyp(k, i, typ){
 
 // Unilateral gilt fuer die ganze Uebung, nicht fuer einzelne Saetze —
 // genauso wie der Schalter im laufenden Training.
+function histSetNotiz(v){ if(histCtx) histCtx.entwurf.notiz = v; }
+function histToggleFremd(){
+  if(!histCtx) return;
+  histCtx.entwurf.fremd = !histCtx.entwurf.fremd;
+  renderHistDetail();
+}
 function histToggleUni(k){
   if(!histCtx) return;
   var arr = histCtx.entwurf.sets[k];
@@ -3491,6 +3549,9 @@ function saveHistDetail(){
     });
   });
   histKennzahlen(e);
+  if(e.notiz) e.notiz = String(e.notiz).trim();
+  if(!e.notiz) delete e.notiz;
+  if(!e.fremd) delete e.fremd;
   state.history[histCtx.idx] = e;
   saveState();
   histCtx.bearbeiten = false;
@@ -3698,7 +3759,7 @@ function uebungAbschliessen(pi, si){
 function lastSessionForPlan(planId){
   for(var i=state.history.length-1;i>=0;i--){
     var h=state.history[i];
-    if(h.type==="workout" && h.planId===planId) return h;
+    if(h.type==="workout" && h.planId===planId && !h.fremd) return h;
   }
   return null;
 }
@@ -3771,11 +3832,8 @@ function renderPauseNext(){
   var slot=workout.plan.paare[focusCtx.pi].slots[focusCtx.si];
   if(!slot||!slot.ueb) return;
   // Erster noch nicht erledigter Satz dieser Uebung ist das naechste Ziel.
-  var target=null, tIdx=0;
-  for(var i=0;i<slot.saetze.length;i++){
-    var d=workout.data[focusCtx.pi+"_"+focusCtx.si+"_"+i];
-    if(!isSetDone(d)){ target=slot.saetze[i]; tIdx=i; break; }
-  }
+  var tIdx=aktiverSatz(focusCtx.pi, focusCtx.si);
+  var target=slot.saetze[tIdx]||null;
   var html='<div class="rp-next-lbl">ALS NÄCHSTES</div>';
   html+='<div class="rp-next-ex">'+esc(slot.ueb)+(slot.unilat?' · je Seite':'')+'</div>';
   if(target){
@@ -3791,8 +3849,14 @@ function renderPauseNext(){
 }
 
 // Pause per Hand starten (Button am Satz) — nutzt dieselbe Anzeige wie die Automatik.
-function startManualPause(pi,si){
+// Wird sie an einem Satz gestartet, ist dieser Satz damit fertig — nach der
+// Pause leuchtet der naechste.
+function startManualPause(pi,si,i){
   if(pi!==undefined&&si!==undefined) focusCtx={pi:pi,si:si};
+  if(i!==undefined){
+    var d=workout.data[pi+"_"+si+"_"+i];
+    if(d && d.kg && d.wdh){ confirmValue(pi+"_"+si+"_"+i); d.done=true; saveActiveWorkout(); renderFocus(); }
+  }
   startFocusPause();
 }
 
@@ -3995,7 +4059,7 @@ function renderFocus(){
     // zwei verschiedene Dinge.
     html+='<button class="fo-state'+(fertig?" done":"")+'" onclick="toggleSetDone(\''+key+'\')">'+
            (fertig?"✓ Erledigt":"Erledigt?")+'</button>';
-    html+='<button class="fo-rest" onclick="startManualPause('+pi+','+si+')" title="Pause starten">⏱</button>';
+    html+='<button class="fo-rest" onclick="startManualPause('+pi+','+si+','+i+')" title="Satz fertig · Pause starten">⏱</button>';
     html+='<button class="fo-del" onclick="deleteSet('+pi+','+si+','+i+')" title="Satz löschen">×</button>';
     html+='</div>';
     html+='</div>';
@@ -4209,11 +4273,7 @@ function addRestPause(pi, si){
   slot.saetze.push(mkRP());
 
   // Gewicht uebernehmen: rueckwaerts nach dem letzten Wert suchen
-  var carryKg="";
-  for(var i=newIdx-1;i>=0;i--){
-    var d=workout.data[pi+"_"+si+"_"+i];
-    if(d && d.kg){ carryKg=d.kg; break; }
-  }
+  var carryKg=letztesGewicht(pi, si, newIdx);
   if(carryKg) workout.data[pi+"_"+si+"_"+newIdx] = {kg:carryKg, wdh:"", done:false};
 
   saveActiveWorkout();
@@ -4286,7 +4346,7 @@ function closeRestPauseTimer(){
   stopRPTimer();
   document.getElementById("rp-ring").classList.remove("done");
   document.getElementById("rp-overlay").classList.remove("open");
-  renderFreeWorkout();
+  if(focusCtx) renderFocus(); else renderFreeWorkout();
 }
 
 function addSetToExercise(pi, si){
@@ -4302,8 +4362,21 @@ function addSetToExercise(pi, si){
     wdh:"6–10",
     rir:false
   });
+  // Gewicht des letzten Satzes vorlegen — ein Back-off startete sonst bei 0.
+  var newIdx = slot.saetze.length-1;
+  var carry = letztesGewicht(pi, si, newIdx);
+  if(carry) workout.data[pi+"_"+si+"_"+newIdx] = {kg:carry, wdh:"", done:false};
   saveActiveWorkout();
   if(focusCtx) renderFocus(); else renderFreeWorkout();
+}
+
+// Letztes eingetragenes Gewicht vor Satz `vor` im Slot (rueckwaerts gesucht).
+function letztesGewicht(pi, si, vor){
+  for(var i=vor-1;i>=0;i--){
+    var d=workout.data[pi+"_"+si+"_"+i];
+    if(d && d.kg) return d.kg;
+  }
+  return "";
 }
 
 // Zusaetzlichen Warm-Up-Satz einfuegen — direkt hinter die vorhandenen Warm-Ups,
@@ -4319,6 +4392,9 @@ function addWarmUp(pi, si){
     if(workout.data[from]){ workout.data[to] = workout.data[from]; delete workout.data[from]; }
     else delete workout.data[to];
   }
+  // Gewicht des vorigen Warm-Ups vorlegen, statt bei 0 zu beginnen.
+  var carry = letztesGewicht(pi, si, pos);
+  if(carry) workout.data[pi+"_"+si+"_"+pos] = {kg:carry, wdh:"", done:false};
   saveActiveWorkout();
   if(focusCtx) renderFocus(); else renderFreeWorkout();
 }
@@ -4534,11 +4610,25 @@ function finishFreeWorkout(){
     var liste = f.offeneUeb.slice(0,4).join(", ") + (f.offeneUeb.length>4 ? " …" : "");
     askConfirm("Noch " + f.offen + " von " + f.gesamt + " Sätzen offen",
       "Offen: " + liste + "\n\nNicht eingetragene Sätze zählen nicht in die Historie.",
-      function(){ pauseFreeTimer(); finishWorkout(); },
+      function(){ pauseFreeTimer(); finishMitNotizAbfrage(); },
       {icon:"🏁", yes:"Trotzdem beenden", no:"Weitertrainieren"});
     return;
   }
   pauseFreeTimer();
+  finishMitNotizAbfrage();
+}
+
+// Wer eine Notiz hinterlaesst, trainiert oft nicht im gewohnten Setup. Ohne
+// gesetzten Merker einmal nachfragen, damit die Einheit nicht stillschweigend
+// zur Vorgabe fuer das naechste Training wird.
+function finishMitNotizAbfrage(){
+  if((workout.notiz||"").trim() && !workout.fremd){
+    askConfirm("Abweichendes Setup?",
+      "Du hast eine Notiz hinterlassen. Soll diese Einheit als fremdes Gym gelten und NICHT als Vorgabe für die nächsten Gewichte dienen?",
+      function(){ workout.fremd=true; finishWorkout(); },
+      {icon:"🏨", yes:"Ja, fremdes Gym", no:"Nein, ganz normal", onNo:function(){ finishWorkout(); }});
+    return;
+  }
   finishWorkout();
 }
 
@@ -4562,6 +4652,41 @@ function downloadBackup(){
   }catch(e){
     showToast("Backup fehlgeschlagen: "+e.message);
   }
+}
+
+// Flache Tabelle, eine Zeile je Satz — fuer Google Sheets oder Excel.
+// Semikolon und Dezimalkomma, damit deutsche Tabellen die Datei direkt lesen.
+function buildCSV(){
+  var kopf=["Datum","Wochentag","Plan","Runde","Übung","Satz","Typ","kg","Wdh","Unilateral","Volumen","Fremdes Gym","Notiz"];
+  var zeilen=[kopf];
+  var z=function(v){ v=String(v==null?"":v); return (/[;"\n]/.test(v)) ? '"'+v.replace(/"/g,'""')+'"' : v; };
+  var num=function(n){ return String(n).replace(".",","); };
+  (state.history||[]).forEach(function(h){
+    if(h.type!=="workout"||!h.sets) return;
+    var keys=Object.keys(h.slotMeta||{}).filter(function(k){ return Array.isArray(h.sets[k]); });
+    keys.sort(function(a,b){ var pa=a.split("_").map(Number), pb=b.split("_").map(Number); return (pa[0]-pb[0])||(pa[1]-pb[1]); });
+    keys.forEach(function(k){
+      (h.sets[k]||[]).forEach(function(r,i){
+        if(!r||!r.kg||!r.wdh) return;
+        var vol=parseFloat(r.kg)*parseFloat(r.wdh)*(r.uni?2:1);
+        var notiz=h.sets[k+"_"+i+"_note"]||"";
+        zeilen.push([h.date,h.weekday||"",h.planName||"",h.mesoWeek||"",h.slotMeta[k],i+1,HIST_KURZ[normType(r.type)]||r.type||"",
+          num(r.kg),r.wdh,r.uni?"ja":"nein",num(Math.round(vol*10)/10),h.fremd?"ja":"nein",notiz||h.notiz||""]);
+      });
+    });
+  });
+  return "\ufeff"+zeilen.map(function(row){ return row.map(z).join(";"); }).join("\r\n");
+}
+function downloadCSV(){
+  try{
+    var blob=new Blob([buildCSV()],{type:"text/csv;charset=utf-8"});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");
+    a.href=url;a.download="skywalker-training-"+new Date().toISOString().slice(0,10)+".csv";
+    document.body.appendChild(a);a.click();
+    setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},100);
+    showToast("CSV exportiert");
+  }catch(e){ showToast("CSV fehlgeschlagen: "+e.message); }
 }
 
 function restoreBackup(ev){
@@ -4663,6 +4788,7 @@ function startWorkout(planIdx){
   var plan=state.plans[planIdx];
   workout.plan=JSON.parse(JSON.stringify(plan));
   workout.pairIdx=0;workout.satzIdx=0;workout.data={};workout.swapData={};
+  workout.notiz="";workout.fremd=false;
   workout.startTime=Date.now();
   workout.startTimeStr=new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
   dismissRPOverlay();
@@ -5097,7 +5223,7 @@ function getLastData(planId,pairIdx,slotIdx,exerciseName,uni){
 function findLastByName(exerciseName, onlyPlan, uniWunsch){
   for(var i=state.history.length-1;i>=0;i--){
     var h=state.history[i];
-    if(!h.sets||!h.slotMeta) continue;
+    if(!h.sets||!h.slotMeta||h.fremd) continue;
     if(onlyPlan && h.planId!==onlyPlan) continue;
     for(var k in h.slotMeta){
       if(h.slotMeta[k]!==exerciseName) continue;
@@ -5116,7 +5242,7 @@ function findLastByName(exerciseName, onlyPlan, uniWunsch){
 function getLastDataByPosition(planId,pairIdx,slotIdx){
   for(var i=state.history.length-1;i>=0;i--){
     var h=state.history[i];
-    if(!h.sets) continue;
+    if(!h.sets||h.fremd) continue;
     // No name given — old behaviour (same-plan, same-position)
     if(h.planId===planId){
       var k2=pairIdx+"_"+slotIdx;
@@ -5674,6 +5800,8 @@ function finishWorkout(){
     mesoWeek:cycleProgress().runde,elapsed:elapsed,totalSets:totalSets,totalVol:totalVol,
     wsSets:wsSets,wsVol:wsVol,
     sets:setsMap,slotMeta:slotMeta,saetzeSnapshot:JSON.parse(JSON.stringify(plan.paare)),swaps:workout.swapData};
+  if((workout.notiz||"").trim()) entry.notiz=workout.notiz.trim();
+  if(workout.fremd) entry.fremd=true;
   state.history.push(entry);saveState();
   clearActiveWorkout(); // workout finished cleanly — drop the recovery snapshot
 
@@ -6224,6 +6352,7 @@ function resumeActiveWorkout(snap){
   workout.swapData=snap.swapData||{};
   workout.startTime=snap.startTime||Date.now();
   workout.startTimeStr=snap.startTimeStr||new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+  workout.notiz=snap.notiz||""; workout.fremd=!!snap.fremd;
   activeTab="overview";
   if(workout.plan && isFreeMode(workout.plan)){
     renderFreeWorkout();
