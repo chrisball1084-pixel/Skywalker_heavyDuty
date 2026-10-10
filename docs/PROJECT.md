@@ -45,15 +45,21 @@ Altdaten können abweichende Schreibweisen enthalten und müssen normalisiert we
 
 ## Seiten des Projekts
 
-`index.html` ist die Trainings-App. `auswertung.html` ist eine zweite, eigenständige Seite auf derselben Origin: Kalender-Konsistenz, Arbeitsvolumen je Woche und Muskelgruppe, Satzstruktur, Suche über alle Notizen und Hinweise zur Datenqualität.
+`index.html` ist die Trainings-App. `auswertung.html` ist eine zweite, eigenständige Seite auf derselben Origin, mit vier Reitern: Überblick (Kennzahlen, Wochenvolumen nach Split, Kalender, Muskelgruppen, Satzstruktur), Übungen (Progression je Übung, wahlweise über den HIT-Satz oder das beste Arbeitsset), Notizen (Suche über Satz- und Einheitsnotizen) und Daten (Herkunft, Einschränkungen, Backup laden).
 
 Weil beide von derselben GitHub-Pages-Origin ausgeliefert werden, liest die Auswertung den `localStorage` der App direkt (`sw51_history`, `sw51_plans`, `sw51_phil`, `sw51_bw`) und ist damit immer auf Stand — ohne Export oder Import. Ein eigenes Repository könnte das nicht; andere Origin bedeutet kein Zugriff auf die Daten.
 
-Trennung der Zuständigkeiten: **Progression, Bestwerte und Zykluslogik gehören in die App**, nicht in die Auswertung. Die Auswertung zeigt nur, was die App nicht hat. Diese Grenze nicht aufweichen, sonst entstehen zwei Rechenwege für dieselbe Kennzahl.
+**iOS trennt die Speicher.** Eine vom Home-Bildschirm gestartete Web-App hat einen eigenen Container; dieselbe Adresse in Safari geöffnet sieht ihn nicht. Die Auswertung muss deshalb aus der App heraus aufgerufen werden, sonst wirkt sie leer. Ein zweites Symbol für die Auswertung allein funktioniert aus demselben Grund nicht. Als Ausweg nimmt die Seite ein JSON-Backup als Ersatzquelle an; der Leerzustand erklärt beides.
 
-Die Auswertung spiegelt die Theme-Token aus `index.html`. Werden sie dort geändert, hier mitziehen. Sie hat ein eigenes `manifest-auswertung.webmanifest`, damit sie als eigenes Symbol auf den Home-Bildschirm kann; beide Seiten stehen im `SHELL` des Service Workers.
+Die Auswertung hat ein **eigenes Farbschema**, bewusst unabhängig von den Themes der App: die Diagramme sollen überall gleich lesbar sein, und die Plan-Akzentfarben der App liegen alle im Cyan-Bereich und sind bei Rot-Grün-Schwäche nicht zu trennen. Die drei Serienfarben sind gegen dunkle Flächen auf Kontrast und Farbfehlsichtigkeit geprüft. Theme-Änderungen in `index.html` müssen hier **nicht** nachgezogen werden.
 
-**Fallstrick in den SVG-Diagrammen:** Eine CSS-Klasse, die `fill` setzt, schlägt das `fill`-Attribut im SVG. Die Klasse der unsichtbaren Trefferflächen (`.hit`, `fill:transparent`) darf deshalb nie auf einer sichtbaren Marke landen — sonst wird sie unsichtbar, ohne dass ein Fehler entsteht. Sichtbare Marken mit eigenem Tooltip nutzen `.zelle`.
+Die Auswertung rechnet genau das, was in der Historie steht — keine Umbenennungen, keine Zusammenführungen. Falsche Übungsnamen gehören in der App korrigiert (Verlauf → Einheit → Bearbeiten → „⇄ Übung umhängen"), nicht in einer Sonderregel der Auswertung.
+
+Eigenes `manifest-auswertung.webmanifest`; beide Seiten stehen im `SHELL` des Service Workers und funktionieren offline.
+
+**Fallstrick in den SVG-Diagrammen:** Eine CSS-Klasse, die `fill` setzt, schlägt das `fill`-Attribut im SVG. Die Klasse der unsichtbaren Trefferflächen (`.hit-target`, `fill:transparent`) darf deshalb nie auf einer sichtbaren Marke landen — sonst wird sie unsichtbar, ohne dass ein Fehler entsteht.
+
+**Fallstrick beim Leerzustand:** Er ersetzt den Inhalt von `.wrap`. Elemente, die danach noch gebraucht werden, dürfen nicht über eine einmal gemerkte Referenz laufen (`document.getElementById` beim Benutzen, nicht beim Laden), und die Dateiauswahl liegt außerhalb von `.wrap`. Nach dem Wiederherstellen muss `verdrahte()` die Bedienelemente erneut anbinden.
 
 ## Volumenrechnung
 
