@@ -1548,7 +1548,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.16.0";
+var APP_VERSION = "v6.17.0";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -3398,6 +3398,10 @@ function renderHistDetail(){
     var uni = arr.some(function(r){ return r && r.uni; });
     h += '<div class="hd-ueb">'+esc(e.slotMeta[k])+'</div>';
     if(bearb){
+      // Nachtraeglich umhaengen: dieselbe Uebung kann ueber die Zeit ein
+      // anderes Geraet gemeint haben (Peck Deck unter "Chest Fly Maschine"),
+      // oder derselbe Satz lief versehentlich unter zwei Namen (LH/KH).
+      h += '<button class="hd-uni" onclick="openHistSwap(\''+k+'\')">⇄ ÜBUNG UMHÄNGEN</button>';
       h += '<button class="hd-uni'+(uni?" on":"")+'" onclick="histToggleUni(\''+k+'\')">'+
            (uni?"☑":"☐")+' UNILATERAL · WERT JE SEITE</button>';
     }
@@ -3541,6 +3545,121 @@ function histKennzahlen(e){
   e.wsSets    = wS;
   e.wsVol     = Math.round(wV*10)/10;
   return e;
+}
+
+// ── Übung einer vergangenen Einheit nachträglich umhängen ──────────────
+// Die App speichert nur den Übungsnamen, nicht das Gerät. Lief eine Einheit
+// an einer anderen Maschine, sieht das in der Progression wie ein Kraftsprung
+// aus. Hier laesst sich der Satz nachtraeglich der richtigen Uebung zuordnen.
+function openHistSwap(k){
+  if(!histCtx || !histCtx.bearbeiten) return;
+  var e = histCtx.entwurf;
+  var alt = (e.slotMeta||{})[k] || "";
+  var kat = null;
+  var parts = String(k).split("_"), pi = parseInt(parts[0],10), si = parseInt(parts[1],10);
+  var snap = e.saetzeSnapshot && e.saetzeSnapshot[pi] && e.saetzeSnapshot[pi].slots && e.saetzeSnapshot[pi].slots[si];
+  if(snap && snap.kat) kat = snap.kat;
+  if(!kat) kat = katFuerUebung(alt) || "— (leer)";
+
+  swapCtx = { mode:"hist", key:k, kat:kat, ueb:alt, q:"", filterMuster:null };
+  var fEl=document.getElementById("swap-filter");
+  var fHtml='<button class="swap-filter-btn active" onclick="setSwapFilter(null)">Alle</button>';
+  BEWEGUNGSMUSTER.forEach(function(m){fHtml+='<button class="swap-filter-btn" onclick="setSwapFilter(\''+m+'\')">'+m+'</button>';});
+  fEl.innerHTML=fHtml;
+  var sEl=document.getElementById("swap-search");
+  if(sEl) sEl.value="";
+  renderSwapList(kat);
+  document.getElementById("swap-modal").classList.add("open");
+}
+
+// Kategorie zu einem Uebungsnamen aus dem Katalog, sonst aus der Historie.
+function katFuerUebung(name){
+  if(!name) return null;
+  var gefunden=null;
+  ALL_KAT.forEach(function(kat){
+    if(gefunden || kat==="— (leer)") return;
+    var d=DB[kat];
+    if(d && d.uebungen && d.uebungen.indexOf(name)>=0) gefunden=kat;
+  });
+  if(gefunden) return gefunden;
+  for(var i=(state.history||[]).length-1;i>=0;i--){
+    var h=state.history[i];
+    if(!h.slotMeta || !h.saetzeSnapshot) continue;
+    for(var k in h.slotMeta){
+      if(h.slotMeta[k]!==name) continue;
+      var p=k.split("_"), s=h.saetzeSnapshot[parseInt(p[0],10)];
+      if(s && s.slots && s.slots[parseInt(p[1],10)] && s.slots[parseInt(p[1],10)].kat) return s.slots[parseInt(p[1],10)].kat;
+    }
+  }
+  return null;
+}
+
+// Wie viele andere Einheiten tragen denselben Uebungsnamen?
+function histWeitereMitNamen(name, ausserIdx){
+  var n=0;
+  (state.history||[]).forEach(function(h,i){
+    if(i===ausserIdx || !h.slotMeta) return;
+    for(var k in h.slotMeta){ if(h.slotMeta[k]===name){ n++; return; } }
+  });
+  return n;
+}
+
+function histSwapUebung(kat,ueb){
+  if(!histCtx || !swapCtx || swapCtx.mode!=="hist") return;
+  var k = swapCtx.key, e = histCtx.entwurf;
+  var alt = (e.slotMeta||{})[k] || "";
+  closeSwap();
+  if(!ueb || ueb===alt) return;
+
+  e.slotMeta[k] = ueb;
+  // Die Kategorie steckt im Snapshot der Einheit; ohne Nachziehen bliebe die
+  // alte Muskelgruppe an der umgehaengten Uebung haengen.
+  var parts = String(k).split("_"), pi = parseInt(parts[0],10), si = parseInt(parts[1],10);
+  var snap = e.saetzeSnapshot && e.saetzeSnapshot[pi] && e.saetzeSnapshot[pi].slots && e.saetzeSnapshot[pi].slots[si];
+  if(snap){ snap.ueb = ueb; if(kat && kat!=="— (leer)") snap.kat = kat; }
+  if(!e.swaps) e.swaps = {};
+  e.swaps[k] = {kat:(kat&&kat!=="— (leer)")?kat:(snap&&snap.kat)||"", ueb:ueb};
+
+  renderHistDetail();
+  showToast("⇄ " + ueb);
+
+  // Derselbe Tippfehler steckt meist in mehreren Einheiten (LH statt KH).
+  // Einmal fragen, statt den Nutzer durch jede Einheit einzeln zu schicken.
+  var weitere = histWeitereMitNamen(alt, histCtx.idx);
+  if(weitere > 0){
+    askConfirm(
+      weitere + (weitere===1 ? " weitere Einheit" : " weitere Einheiten") + " mit „" + alt + "“",
+      "Soll „" + alt + "“ auch dort zu „" + ueb + "“ werden?\n\nDas gilt sofort und unabhängig davon, ob du diese Einheit speicherst.",
+      function(){ histUmbenennenUeberall(alt, ueb, kat); },
+      {icon:"⇄", yes:"Überall ändern", no:"Nur hier"}
+    );
+  }
+}
+
+// Benennt die Uebung in allen anderen Einheiten um. Die gerade offene Einheit
+// bleibt aussen vor — dort steckt die Aenderung schon im Entwurf.
+function histUmbenennenUeberall(alt, neu, kat){
+  var n = 0;
+  (state.history||[]).forEach(function(h,i){
+    if(i===(histCtx?histCtx.idx:-1) || !h.slotMeta) return;
+    var getroffen = false;
+    Object.keys(h.slotMeta).forEach(function(k){
+      if(h.slotMeta[k]!==alt) return;
+      h.slotMeta[k] = neu;
+      getroffen = true;
+      var p = k.split("_"), pi = parseInt(p[0],10), si = parseInt(p[1],10);
+      var s = h.saetzeSnapshot && h.saetzeSnapshot[pi] && h.saetzeSnapshot[pi].slots && h.saetzeSnapshot[pi].slots[si];
+      if(s){ s.ueb = neu; if(kat && kat!=="— (leer)") s.kat = kat; }
+      if(!h.swaps) h.swaps = {};
+      h.swaps[k] = {kat:(kat&&kat!=="— (leer)")?kat:(s&&s.kat)||"", ueb:neu};
+    });
+    if(getroffen) n++;
+  });
+  saveState();
+  renderHome();
+  if(typeof renderStats==="function" && document.getElementById("stats-screen").classList.contains("active")) renderStats();
+  if(typeof renderDash==="function" && document.getElementById("dash-screen").classList.contains("active")) renderDash();
+  showToast(n + (n===1 ? " Einheit umbenannt" : " Einheiten umbenannt"));
 }
 
 function saveHistDetail(){
@@ -5303,8 +5422,17 @@ function getLastKgWdh(planId,pairIdx,slotIdx,satzIdx){
 // ══════════════════════════════════
 // SWAP
 // ══════════════════════════════════
+// Der Slot, auf den sich das Tausch-Overlay gerade bezieht. Im laufenden
+// Training ist das ein Plan-Slot, im Historie-Editor eine Zeile der Einheit.
+// Beide liefern {kat, ueb}, damit Liste und Filter nicht zwei Wege brauchen.
+function swapSlot(){
+  if(!swapCtx) return {kat:"— (leer)", ueb:""};
+  if(swapCtx.mode==="hist") return {kat:swapCtx.kat||"— (leer)", ueb:swapCtx.ueb||""};
+  return workout.plan.paare[swapCtx.pairIdx].slots[swapCtx.slotIdx];
+}
+
 function openSwap(pairIdx,slotIdx){
-  swapCtx={pairIdx:pairIdx,slotIdx:slotIdx};
+  swapCtx={mode:"workout",pairIdx:pairIdx,slotIdx:slotIdx};
   var slot=workout.plan.paare[pairIdx].slots[slotIdx];
   var fEl=document.getElementById("swap-filter");
   var fHtml='<button class="swap-filter-btn'+(swapCtx.filterMuster?"":" active")+'" onclick="setSwapFilter(null)">Alle</button>';
@@ -5320,7 +5448,7 @@ function openSwap(pairIdx,slotIdx){
 function onSwapSearch(){
   var sEl=document.getElementById("swap-search");
   swapCtx.q=sEl?sEl.value:"";
-  renderSwapList(workout.plan.paare[swapCtx.pairIdx].slots[swapCtx.slotIdx].kat);
+  renderSwapList(swapSlot().kat);
 }
 // Umlaut-tolerant. Beide Seiten laufen durch dieselbe Normalisierung, deshalb
 // findet "rucken" wie auch "ruecken" die Übungen unter "Rücken".
@@ -5333,10 +5461,10 @@ function setSwapFilter(muster){
   swapCtx.filterMuster=muster;
   document.querySelectorAll(".swap-filter-btn").forEach(function(b){b.classList.remove("active");});
   event.target.classList.add("active");
-  renderSwapList(workout.plan.paare[swapCtx.pairIdx].slots[swapCtx.slotIdx].kat);
+  renderSwapList(swapSlot().kat);
 }
 function renderSwapList(currentKat){
-  var el=document.getElementById("swap-list"),slot=workout.plan.paare[swapCtx.pairIdx].slots[swapCtx.slotIdx],html="";
+  var el=document.getElementById("swap-list"),slot=swapSlot(),html="";
   var raw=(swapCtx.q||"").trim(), q=swapNorm(raw), treffer=0, exakt=false;
   ALL_KAT.forEach(function(kat){
     if(kat==="— (leer)") return;
@@ -5372,8 +5500,7 @@ function selectSwapCustom(){
   var sEl=document.getElementById("swap-search");
   var name=sEl?sEl.value.trim():"";
   if(!name) return;
-  var slot=workout.plan.paare[swapCtx.pairIdx].slots[swapCtx.slotIdx];
-  selectSwap(slot.kat||"— (leer)", name);
+  selectSwap(swapSlot().kat||"— (leer)", name);
 }
 function getMusterColor(m){
   if(m==="Upper Push") return "var(--acc)";if(m==="Upper Pull") return "var(--acc3)";
@@ -5381,6 +5508,7 @@ function getMusterColor(m){
   if(m==="Core") return "var(--gold)";return "var(--t-mid)";
 }
 function selectSwap(kat,ueb){
+  if(swapCtx && swapCtx.mode==="hist"){ histSwapUebung(kat,ueb); return; }
   var slot=workout.plan.paare[swapCtx.pairIdx].slots[swapCtx.slotIdx];
   slot.kat=kat;slot.ueb=ueb;
   workout.swapData[swapCtx.pairIdx+"_"+swapCtx.slotIdx]={kat:kat,ueb:ueb};
