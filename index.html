@@ -4099,7 +4099,11 @@ function attachFocusListeners(){
       var key=this.dataset.key, f=this.dataset.field;
       var d=workout.data[key]||(workout.data[key]={});
       confirmValue(key);
-      d[f]=this.value;
+      // Zahl speichern, nicht den Rohtext des Feldes. Stand hier frueher
+      // this.value, landete "75" statt 75 in der Historie und im Backup —
+      // und letztesGewicht() trug den String in jeden Back-off- und
+      // Rest-Pause-Satz weiter, der das Gewicht uebernimmt.
+      d[f]=numOrEmpty(this.value);
       saveActiveWorkout();
       renderFocusVolume();
     });
@@ -4370,11 +4374,19 @@ function addSetToExercise(pi, si){
   if(focusCtx) renderFocus(); else renderFreeWorkout();
 }
 
+// Leeres Feld bleibt leer, alles andere wird zur Zahl. Nachkommastellen
+// bleiben erhalten (halbe Wiederholungen bei Back-off-Saetzen kommen vor).
+function numOrEmpty(v){
+  if(v==="" || v==null) return "";
+  var n=parseFloat(v);
+  return isNaN(n) ? "" : n;
+}
+
 // Letztes eingetragenes Gewicht vor Satz `vor` im Slot (rueckwaerts gesucht).
 function letztesGewicht(pi, si, vor){
   for(var i=vor-1;i>=0;i--){
     var d=workout.data[pi+"_"+si+"_"+i];
-    if(d && d.kg) return d.kg;
+    if(d && d.kg) return numOrEmpty(d.kg);
   }
   return "";
 }

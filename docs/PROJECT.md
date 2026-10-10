@@ -43,6 +43,20 @@ Die Anwendung unterscheidet mehrere Satztypen, unter anderem:
 
 Altdaten können abweichende Schreibweisen enthalten und müssen normalisiert werden.
 
+## Volumenrechnung
+
+Effektives Volumen ist `kg × Wiederholungen`, Warm-ups ausgenommen.
+
+**Unilaterale Sätze zählen doppelt.** Ein Satz mit `uni: true` steht für beide Seiten; `totalVol` und `wsVol` einer Einheit enthalten ihn deshalb mit `kg × Wdh × 2`. Das eingetragene Gewicht ist dagegen die Last **einer** Seite — also der Wert, der an der Hantel stand. Wer die Historie extern auswertet, muss beides so nachbilden, sonst weicht die Summe ab (im Backup vom 10.10.2026 waren das 3,7 % über 33 unilaterale Sätze). Für Progression und 1RM-Schätzung gilt weiterhin die Last einer Seite, nicht die verdoppelte.
+
+## Eingabewerte
+
+Gewicht und Wiederholungen werden **immer als Zahl** in `workout.data` und damit in `state.history` abgelegt, niemals als Rohtext eines Eingabefeldes. Ein leeres Feld bleibt der leere String `""` und wird nicht zu `0` — `finishWorkout()` und der Historien-Editor unterscheiden diese beiden Fälle.
+
+Dafür gibt es `numOrEmpty()`. Jeder Schreibpfad muss sie benutzen: die Fokus-Ansicht (`attachFocusListeners`), der freie Modus (`attachFreeListeners`), `storeBlock()`, `toggleSetDone()` und der Historien-Editor (`histSetVal`). Ebenso `letztesGewicht()`, weil neue Back-off-, Rest-Pause- und Warm-up-Sätze das Gewicht des Vorgängers übernehmen und einen Textwert sonst weitertragen. Nachkommastellen müssen erhalten bleiben; halbe Wiederholungen kommen bei Back-off-Sätzen vor.
+
+Abgedeckt durch `tests/tkgnum.js`.
+
 ## Dauerhafte technische Regeln
 
 ### iOS-PWA
