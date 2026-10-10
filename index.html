@@ -1292,6 +1292,20 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
     <div id="stats-recent-list"></div>
 
     <!-- Backup -->
+    <div class="sec" style="padding:0;margin-top:18px">Auswertung</div>
+    <div class="settings-sec">
+      <!-- Eigene Seite statt noch ein Screen hier: Konsistenz, Volumen nach
+           Split und Muskelgruppe, Satzstruktur und die Notiz-Suche. Liest
+           denselben localStorage, ist also immer auf Stand. -->
+      <a class="settings-row" href="auswertung.html" style="cursor:pointer;text-decoration:none;color:inherit">
+        <div>
+          <div class="sr-lbl">📈 Konsistenz, Volumen &amp; Notizen</div>
+          <div style="font-size:10px;color:var(--t-mid);margin-top:3px;line-height:1.4">Kalender, Wochenvolumen je Split, Muskelgruppen, Satzstruktur und die Suche über alle Notizen. Progression und Bestwerte bleiben hier.</div>
+        </div>
+        <div class="sr-val">›</div>
+      </a>
+    </div>
+
     <div class="sec" style="padding:0;margin-top:18px">Daten-Backup</div>
     <div class="settings-sec">
       <div class="settings-row" onclick="downloadBackup()" style="cursor:pointer">
@@ -1548,7 +1562,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.17.0";
+var APP_VERSION = "v6.18.0";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;

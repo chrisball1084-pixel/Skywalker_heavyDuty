@@ -43,6 +43,18 @@ Die Anwendung unterscheidet mehrere Satztypen, unter anderem:
 
 Altdaten können abweichende Schreibweisen enthalten und müssen normalisiert werden.
 
+## Seiten des Projekts
+
+`index.html` ist die Trainings-App. `auswertung.html` ist eine zweite, eigenständige Seite auf derselben Origin: Kalender-Konsistenz, Arbeitsvolumen je Woche und Muskelgruppe, Satzstruktur, Suche über alle Notizen und Hinweise zur Datenqualität.
+
+Weil beide von derselben GitHub-Pages-Origin ausgeliefert werden, liest die Auswertung den `localStorage` der App direkt (`sw51_history`, `sw51_plans`, `sw51_phil`, `sw51_bw`) und ist damit immer auf Stand — ohne Export oder Import. Ein eigenes Repository könnte das nicht; andere Origin bedeutet kein Zugriff auf die Daten.
+
+Trennung der Zuständigkeiten: **Progression, Bestwerte und Zykluslogik gehören in die App**, nicht in die Auswertung. Die Auswertung zeigt nur, was die App nicht hat. Diese Grenze nicht aufweichen, sonst entstehen zwei Rechenwege für dieselbe Kennzahl.
+
+Die Auswertung spiegelt die Theme-Token aus `index.html`. Werden sie dort geändert, hier mitziehen. Sie hat ein eigenes `manifest-auswertung.webmanifest`, damit sie als eigenes Symbol auf den Home-Bildschirm kann; beide Seiten stehen im `SHELL` des Service Workers.
+
+**Fallstrick in den SVG-Diagrammen:** Eine CSS-Klasse, die `fill` setzt, schlägt das `fill`-Attribut im SVG. Die Klasse der unsichtbaren Trefferflächen (`.hit`, `fill:transparent`) darf deshalb nie auf einer sichtbaren Marke landen — sonst wird sie unsichtbar, ohne dass ein Fehler entsteht. Sichtbare Marken mit eigenem Tooltip nutzen `.zelle`.
+
 ## Volumenrechnung
 
 Effektives Volumen ist `kg × Wiederholungen`, Warm-ups ausgenommen.
