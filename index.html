@@ -2572,11 +2572,12 @@ function renderStatsPRs(){
         var ex=byPlan[planId].exercises[exName];
         var d=parseDate_(h.date);
         if(!ex){
-          ex={topKg:s.kg,topWdh:s.wdh,topDate:h.date,topDateMs:d,latestKg:s.kg,latestWdh:s.wdh,latestDate:h.date,latestDateMs:d};
+          ex={topKg:s.kg,topWdh:s.wdh,topDate:h.date,topDateMs:d,topFremd:!!h.fremd,
+              latestKg:s.kg,latestWdh:s.wdh,latestDate:h.date,latestDateMs:d,latestFremd:!!h.fremd};
           byPlan[planId].exercises[exName]=ex;
         }else{
-          if(s.kg>ex.topKg){ex.topKg=s.kg;ex.topWdh=s.wdh;ex.topDate=h.date;ex.topDateMs=d;}
-          if(d>=ex.latestDateMs){ex.latestKg=s.kg;ex.latestWdh=s.wdh;ex.latestDate=h.date;ex.latestDateMs=d;}
+          if(s.kg>ex.topKg){ex.topKg=s.kg;ex.topWdh=s.wdh;ex.topDate=h.date;ex.topDateMs=d;ex.topFremd=!!h.fremd;}
+          if(d>=ex.latestDateMs){ex.latestKg=s.kg;ex.latestWdh=s.wdh;ex.latestDate=h.date;ex.latestDateMs=d;ex.latestFremd=!!h.fremd;}
         }
       });
     });
@@ -2602,7 +2603,8 @@ function renderStatsPRs(){
       else{dCls="flat";dTxt="·";}
       html+='<div class="pr-card">';
       html+='<div><div class="pr-ex">'+esc(name)+'</div>';
-      html+='<div class="pr-meta">PR · '+ex.topDate+' · letzte: '+ex.latestKg+'kg × '+ex.latestWdh+'</div></div>';
+      html+='<div class="pr-meta">PR · '+ex.topDate+fremdMarker({fremd:ex.topFremd})+
+            ' · letzte: '+ex.latestKg+'kg × '+ex.latestWdh+fremdMarker({fremd:ex.latestFremd})+'</div></div>';
       html+='<div><div class="pr-top">'+ex.topKg+'<span style="font-size:9px;color:var(--t-mid)"> kg × '+ex.topWdh+'</span></div>';
       html+='<div class="pr-top-lbl">TOP</div></div>';
       html+='<div class="pr-delta '+dCls+'">'+dTxt+'</div>';
@@ -2996,7 +2998,11 @@ function dashUebungsVerlauf(){
       });
       var key = (h.planId||"?") + "||" + name;
       if(!map[key]) map[key] = {planId:h.planId, planName:h.planName||"—", name:name, punkte:[]};
-      map[key].punkte.push({date:h.date, e1rm:best.e1rm, kg:best.kg, wdh:best.wdh, uni:best.uni, zusatz:zusatz});
+      // Der Merker "fremdes Gym" wandert mit in den Punkt. Fremde Einheiten
+      // zaehlen in der Statistik voll mit (sie sind ja trainiert worden), aber
+      // fremde Geraete und Hanteln haben eine andere Skala — ein Bestwert von
+      // dort muss als solcher erkennbar bleiben.
+      map[key].punkte.push({date:h.date, e1rm:best.e1rm, kg:best.kg, wdh:best.wdh, uni:best.uni, zusatz:zusatz, fremd:!!h.fremd});
     });
   });
   return map;
@@ -3582,7 +3588,7 @@ function openExDetail(idx){
   p.slice().reverse().forEach(function(x){
     var istTop = (parseFloat(x.kg)||0) >= topKg;
     h += '<div class="exd-row'+(istTop?' top':'')+'"><span class="d">'+esc(x.date)+'</span>'+
-         '<span class="s">'+x.kg+' × '+x.wdh+(x.uni?' /Seite':'')+zusatzMarker(x)+'</span>'+
+         '<span class="s">'+x.kg+' × '+x.wdh+(x.uni?' /Seite':'')+zusatzMarker(x)+fremdMarker(x)+'</span>'+
          '<span class="r">'+Math.round(x.e1rm)+'</span></div>';
   });
   h += '</div>';
@@ -3630,6 +3636,13 @@ function bestwerteJeUebung(){
     .filter(function(b){ return b.top; });
 }
 
+// Kennzeichnet einen Wert, der in einem fremden Gym entstanden ist. Dort
+// stehen andere Geraete und anders gewichtete Hanteln — der Wert bleibt in
+// der Statistik, soll aber nicht stillschweigend als Bestwert gelesen werden.
+function fremdMarker(p){
+  return (p && p.fremd) ? ' <span class="fremd-badge">FREMD</span>' : '';
+}
+
 function renderDashBest(){
   var el = document.getElementById('dash-best');
   if(!el) return;
@@ -3642,9 +3655,9 @@ function renderDashBest(){
     html += '<div class="pg-row">';
     html += '<div class="pg-top"><div class="pg-name">'+esc(b.name)+'</div>';
     html += '<div class="pg-val">'+Math.round(b.top.e1rm)+' kg</div></div>';
-    html += '<div class="pg-meta">1RM aus '+b.top.kg+' × '+b.top.wdh+(b.top.uni?' je Seite':'')+' · '+esc(b.top.date)+'</div>';
+    html += '<div class="pg-meta">1RM aus '+b.top.kg+' × '+b.top.wdh+(b.top.uni?' je Seite':'')+' · '+esc(b.top.date)+fremdMarker(b.top)+'</div>';
     html += '<div class="pg-meta">Bestgewicht <span class="pg-best">'+b.topKg.kg+' kg</span> × '+b.topKg.wdh+
-            (b.topKg.uni?' je Seite':'')+' · '+esc(b.topKg.date)+'</div>';
+            (b.topKg.uni?' je Seite':'')+' · '+esc(b.topKg.date)+fremdMarker(b.topKg)+'</div>';
     if(plaene.length>1) html += '<div class="pg-meta" style="color:var(--t-mid)">gelaufen bei: '+esc(plaene.join(', '))+'</div>';
     html += '</div>';
   });
