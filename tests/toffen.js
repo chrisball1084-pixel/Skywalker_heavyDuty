@@ -143,8 +143,8 @@ ok("Verlauf markiert die Einheit", w.document.getElementById("vl-list").innerHTM
 console.log("\n[10] CSV führt die Spalte mit");
 const zeilen=w.buildCSV().replace(/^﻿/,"").split("\r\n");
 ok("Spalte Reduziert", zeilen[0].indexOf("Reduziert")>=0);
-ok("steht hinter Fremdes Gym", zeilen[0].indexOf("Fremdes Gym;Reduziert;Notiz")>=0);
-ok("reduzierte Einheit ist markiert", zeilen.some(z=>z.indexOf("angeschlagen")>=0 && z.indexOf(";nein;ja;")>=0));
+ok("steht hinter den Fremd-Spalten", zeilen[0].indexOf("Fremdes Gym;Fremdes Gerät;Reduziert;Notiz")>=0);
+ok("reduzierte Einheit ist markiert", zeilen.some(z=>z.indexOf("angeschlagen")>=0 && z.indexOf(";nein;nein;ja;")>=0));
 
 console.log("\n[11] Fehlende Vorwerte erklären sich");
 w.state.history=[{type:"workout",planId:"SKY_A",planName:"Chest & Back",philId:"skywalker",

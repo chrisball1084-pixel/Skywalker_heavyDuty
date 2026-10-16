@@ -1575,7 +1575,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.20.0";
+var APP_VERSION = "v6.21.0";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -2756,8 +2756,17 @@ function renderWorkoutNotiz(){
 function setWorkoutNotiz(v){ workout.notiz = v; saveActiveWorkout(); }
 function toggleFremd(){
   workout.fremd = !workout.fremd;
+  if(workout.plan){
+    workout.plan.paare.forEach(function(pair,pi){
+      pair.slots.forEach(function(slot,si){
+        if(!slot.saetze||!slot.saetze.length) return;
+        if(workout.fremd) vorbelegungLoeschen(pi,si);     // Vorschlaege passen nicht mehr
+        else if(focusCtx && focusCtx.pi===pi && focusCtx.si===si) prefillSlot(pi,si);
+      });
+    });
+  }
   saveActiveWorkout();
-  renderFreeList();
+  if(focusCtx) renderFocus(); else renderFreeList();
 }
 function toggleLeicht(){
   workout.leicht = !workout.leicht;
@@ -3365,7 +3374,8 @@ function renderVerlauf(){
         var arr = e.sets[k];
         var v = slotVolumen(arr);
         html += '<div class="vl-ueb"><div class="vl-ueb-kopf">';
-        html += '<span class="vl-ueb-name">'+(n+1)+'. '+esc(e.slotMeta[k])+'</span>';
+        html += '<span class="vl-ueb-name">'+(n+1)+'. '+esc(e.slotMeta[k])+
+                (slotIstFremd(arr)?'<span class="fremd-badge">GERÄT</span>':"")+'</span>';
         if(v>0) html += '<span class="vl-ueb-vol">'+Math.round(v).toLocaleString("de-DE")+' kg</span>';
         html += '</div>';
         var leer = true;
@@ -3492,6 +3502,8 @@ function renderHistDetail(){
       h += '<button class="hd-uni" onclick="openHistSwap(\''+k+'\')">⇄ ÜBUNG UMHÄNGEN</button>';
       h += '<button class="hd-uni'+(uni?" on":"")+'" onclick="histToggleUni(\''+k+'\')">'+
            (uni?"☑":"☐")+' UNILATERAL · WERT JE SEITE</button>';
+      h += '<button class="hd-uni'+(slotIstFremd(arr)?" on":"")+'" onclick="histToggleSlotFremd(\''+k+'\')">'+
+           (slotIstFremd(arr)?"☑":"☐")+' FREMDES GERÄT · NICHT ALS VORGABE</button>';
     }
     var leer = true;
     arr.forEach(function(r,i){
@@ -3575,6 +3587,15 @@ function histToggleUni(k){
   if(!arr) return;
   var an = !arr.some(function(r){ return r && r.uni; });
   arr.forEach(function(r){ if(r) r.uni = an; });
+  renderHistDetail();
+}
+
+function histToggleSlotFremd(k){
+  if(!histCtx) return;
+  var arr = histCtx.entwurf.sets[k];
+  if(!arr) return;
+  var an = !slotIstFremd(arr);
+  arr.forEach(function(r){ if(r){ if(an) r.fremd=true; else delete r.fremd; } });
   renderHistDetail();
 }
 
@@ -4121,7 +4142,8 @@ function isBodyweight(ueb){ return BODYWEIGHT_EX.indexOf(ueb)>=0; }
 
 function prefillSlot(pi, si){
   var slot=workout.plan.paare[pi].slots[si];
-  var prev=getLastData(workout.plan.id, pi, si, slot.ueb, !!slot.unilat);
+  var prev=(slot.fremd||workout.fremd) ? null
+         : getLastData(workout.plan.id, pi, si, slot.ueb, !!slot.unilat);
   // Eigengewichtsuebungen: Koerpergewicht als Startwert, auch ohne Historie
   if(isBodyweight(slot.ueb) && state.bodyWeight){
     slot.saetze.forEach(function(satz,i){
@@ -4134,7 +4156,7 @@ function prefillSlot(pi, si){
     saveActiveWorkout();
     return;
   }
-  if(!prev) return;
+  if(!prev){ vorbelegungLoeschen(pi, si); return; }
   slot.saetze.forEach(function(satz,i){
     var key=pi+"_"+si+"_"+i;
     var d=workout.data[key];
@@ -4142,6 +4164,17 @@ function prefillSlot(pi, si){
     var t=getSetTarget(slot, prev, i);
     if(!t) return;
     workout.data[key]={kg:t.kg, wdh:t.wdh, done:false, pre:true};
+  });
+  saveActiveWorkout();
+}
+
+// Entfernt nur Vorschlaege (pre:true) — eingetragene Werte bleiben.
+function vorbelegungLoeschen(pi, si){
+  var slot=workout.plan.paare[pi].slots[si];
+  if(!slot||!slot.saetze) return;
+  slot.saetze.forEach(function(_,i){
+    var key=pi+"_"+si+"_"+i;
+    if(workout.data[key] && workout.data[key].pre) delete workout.data[key];
   });
   saveActiveWorkout();
 }
@@ -4202,17 +4235,20 @@ function vorwerteGrund(ueb){
   var ausgeschlossen = null;
   for(var i=state.history.length-1;i>=0;i--){
     var h=state.history[i];
-    if(!h.sets||!h.slotMeta||zaehltAlsVorgabe(h)) continue;
+    if(!h.sets||!h.slotMeta) continue;
     for(var k in h.slotMeta){
       if(h.slotMeta[k]!==ueb) continue;
       var arr=h.sets[k];
-      if(arr && arr.some(function(x){return x&&x.kg&&x.wdh;})){ ausgeschlossen=h; break; }
+      if(!brauchbar(arr)) continue;
+      var grund = !zaehltAlsVorgabe(h) ? (h.fremd?"fremdes Gym":"reduziert")
+                : slotIstFremd(arr)    ? "fremdes Gerät" : null;
+      if(grund){ ausgeschlossen=h; ausgeschlossen._grund=grund; break; }
     }
     if(ausgeschlossen) break;
   }
   if(ausgeschlossen){
     return "Keine Vorwerte — diese Übung steht zuletzt am "+esc(ausgeschlossen.date)+
-           " in einer Einheit, die als "+(ausgeschlossen.fremd?"fremdes Gym":"reduziert")+
+           " in einer Einheit, die als "+ausgeschlossen._grund+
            " markiert ist und deshalb nicht als Vorgabe zählt.";
   }
   return "Keine Vorwerte — erste Einheit mit dieser Übung unter diesem Namen.";
@@ -4224,7 +4260,8 @@ function renderFocus(){
   var slot=workout.plan.paare[pi].slots[si];
   var list=focusSlotList();
   var idx=list.findIndex(function(x){return x.pi===pi&&x.si===si;});
-  var prev=getLastData(workout.plan.id, pi, si, slot.ueb, !!slot.unilat);
+  var prev=(slot.fremd||workout.fremd) ? null
+         : getLastData(workout.plan.id, pi, si, slot.ueb, !!slot.unilat);
 
   document.getElementById("focus-ex-name").textContent=slot.ueb;
   document.getElementById("focus-ex-kat").textContent=(slot.kat||"");
@@ -4240,11 +4277,14 @@ function renderFocus(){
   // Ohne Vorwerte stand hier bisher gar nichts — nicht zu unterscheiden von
   // "Anzeige kaputt". Jetzt sagt die Ansicht, warum nichts da ist.
   if(!(prev && prev.some(function(x){return x&&x.kg&&x.wdh;}))){
-    html+='<div class="prev-leer">'+vorwerteGrund(slot.ueb)+'</div>';
+    html+='<div class="prev-leer">'+
+      ( slot.fremd  ? "Fremdes Gerät — die Werte der letzten Einheit passen hier nicht und werden deshalb nicht vorgegeben."
+      : workout.fremd ? "Fremdes Gym — die Werte der letzten Einheit passen hier nicht und werden deshalb nicht vorgegeben."
+      : vorwerteGrund(slot.ueb) )+'</div>';
   }
   // Vorschau der letzten Einheit als Kartenreihe — identisch zum gefuehrten Modus
   if(prev && prev.some(function(x){return x&&x.kg&&x.wdh;})){
-    var lastH=lastSessionForPlan(workout.plan.id);
+    var lastH=vorwertQuelle||lastSessionForPlan(workout.plan.id);
     var prevLabel = lastH ? ("W"+(lastH.mesoWeek||"?")+" · "+lastH.date) : "Letzte Einheit";
     html+='<div class="prev-wrap"><div class="prev-lbl">'+prevLabel+'</div><div class="prev-cards">';
     // Markiert wird der Vorwert zum Satz, an dem du gerade stehst — waehrend
@@ -4329,6 +4369,11 @@ function renderFocus(){
   html+='<div class="fo-uni-row">';
   html+='<button class="fo-uni'+(slot.unilat?" on":"")+'" onclick="toggleUnilateral('+pi+','+si+')">';
   html+=(slot.unilat?"☑":"☐")+' UNILATERAL · WERT JE SEITE</button>';
+  var gFremd = slot.fremd || workout.fremd;
+  html+='<button class="fo-uni'+(gFremd?" on":"")+'" style="margin-top:6px"'+
+        (workout.fremd?' disabled':'')+' onclick="toggleSlotFremd('+pi+','+si+')">';
+  html+=(gFremd?"☑":"☐")+' FREMDES GERÄT · NICHT ALS VORGABE</button>';
+  if(workout.fremd) html+='<div class="fw-notiz-hint">Die ganze Einheit ist als fremdes Gym markiert — damit gilt das für jede Übung.</div>';
   html+='</div>';
 
   document.getElementById("focus-body").innerHTML=html;
@@ -4691,6 +4736,18 @@ function toggleUnilateral(pi, si){
   showToast(slot.unilat ? "Unilateral — Wert gilt je Seite" : "Beidseitig");
 }
 
+// Nur diese Uebung. Die Einheit bleibt, was sie ist — sonst verloere man die
+// Ziele aller uebrigen Uebungen, die am gewohnten Geraet liefen.
+function toggleSlotFremd(pi, si){
+  if(workout.fremd){ showToast("Ganze Einheit ist fremdes Gym"); return; }
+  var slot = workout.plan.paare[pi].slots[si];
+  slot.fremd = !slot.fremd;
+  prefillSlot(pi, si);
+  saveActiveWorkout();
+  if(focusCtx) renderFocus(); else renderFreeWorkout();
+  showToast(slot.fremd ? "Fremdes Gerät — zählt nicht als Vorgabe" : "Gewohntes Gerät");
+}
+
 function deleteSet(pi, si, i){
   var slot = workout.plan.paare[pi].slots[si];
   if(slot.saetze.length <= 1){
@@ -4923,7 +4980,7 @@ function downloadBackup(){
 // Flache Tabelle, eine Zeile je Satz — fuer Google Sheets oder Excel.
 // Semikolon und Dezimalkomma, damit deutsche Tabellen die Datei direkt lesen.
 function buildCSV(){
-  var kopf=["Datum","Wochentag","Plan","Runde","Übung","Satz","Typ","kg","Wdh","Unilateral","Volumen","Fremdes Gym","Reduziert","Notiz"];
+  var kopf=["Datum","Wochentag","Plan","Runde","Übung","Satz","Typ","kg","Wdh","Unilateral","Volumen","Fremdes Gym","Fremdes Gerät","Reduziert","Notiz"];
   var zeilen=[kopf];
   var z=function(v){ v=String(v==null?"":v); return (/[;"\n]/.test(v)) ? '"'+v.replace(/"/g,'""')+'"' : v; };
   var num=function(n){ return String(n).replace(".",","); };
@@ -4937,7 +4994,7 @@ function buildCSV(){
         var vol=parseFloat(r.kg)*parseFloat(r.wdh)*(r.uni?2:1);
         var notiz=h.sets[k+"_"+i+"_note"]||"";
         zeilen.push([h.date,h.weekday||"",h.planName||"",h.mesoWeek||"",h.slotMeta[k],i+1,HIST_KURZ[normType(r.type)]||r.type||"",
-          num(r.kg),r.wdh,r.uni?"ja":"nein",num(Math.round(vol*10)/10),h.fremd?"ja":"nein",h.leicht?"ja":"nein",notiz||h.notiz||""]);
+          num(r.kg),r.wdh,r.uni?"ja":"nein",num(Math.round(vol*10)/10),h.fremd?"ja":"nein",r.fremd?"ja":"nein",h.leicht?"ja":"nein",notiz||h.notiz||""]);
       });
     });
   });
@@ -5461,6 +5518,7 @@ function goBackSatz(){
 }
 
 function getLastData(planId,pairIdx,slotIdx,exerciseName,uni){
+  vorwertQuelle = null;
   // Liefert alle Saetze DIESER Uebung aus der juengsten passenden Einheit.
   // Wichtig: dieselbe Uebung kann in mehreren Plaenen vorkommen (z.B. Latzug am
   // Back-Day mit mehr Gewicht als am Arms-Day). Deshalb zuerst NUR im selben Plan
@@ -5487,7 +5545,17 @@ function getLastData(planId,pairIdx,slotIdx,exerciseName,uni){
 // Juengste Einheit mit dieser Uebung. onlyPlan=null durchsucht alle Plaene.
 // uniWunsch (true/false) verlangt zusaetzlich dieselbe Ausfuehrungsart;
 // undefined nimmt die juengste Einheit unabhaengig davon.
+var vorwertQuelle = null;   // Einheit, aus der die zuletzt gelieferten Vorwerte stammen
+
 function zaehltAlsVorgabe(h){ return !!h && !h.fremd && !h.leicht; }
+// Ein Satz taugt nur als Vorwert, wenn Gewicht UND Wiederholungen dastehen.
+function brauchbar(arr){
+  return Array.isArray(arr) && arr.some(function(s){ return s && s.kg && s.wdh; });
+}
+// Einzelne Uebung an fremdem Geraet (siehe slot.fremd im laufenden Training).
+function slotIstFremd(arr){
+  return Array.isArray(arr) && arr.some(function(s){ return s && s.fremd; });
+}
 
 function findLastByName(exerciseName, onlyPlan, uniWunsch){
   for(var i=state.history.length-1;i>=0;i--){
@@ -5497,11 +5565,13 @@ function findLastByName(exerciseName, onlyPlan, uniWunsch){
     for(var k in h.slotMeta){
       if(h.slotMeta[k]!==exerciseName) continue;
       var arr=h.sets[k];
-      if(!arr || !arr.some(function(s){return s;})) continue;
+      if(!brauchbar(arr)) continue;
+      if(slotIstFremd(arr)) continue;     // anderes Geraet — taugt nicht als Vorgabe
       if(uniWunsch!==undefined){
         var istUni = arr.some(function(s){ return s && s.uni; });
         if(istUni !== !!uniWunsch) continue;
       }
+      vorwertQuelle = h;
       return arr;
     }
   }
@@ -5515,7 +5585,7 @@ function getLastDataByPosition(planId,pairIdx,slotIdx){
     // No name given — old behaviour (same-plan, same-position)
     if(h.planId===planId){
       var k2=pairIdx+"_"+slotIdx;
-      if(h.sets[k2]&&h.sets[k2].some(function(s){return s;})) return h.sets[k2];
+      if(brauchbar(h.sets[k2]) && !slotIstFremd(h.sets[k2])){ vorwertQuelle = h; return h.sets[k2]; }
     }
   }
   return null;
@@ -6051,13 +6121,15 @@ function finishWorkout(){
       slot.saetze.forEach(function(satz,i){
         var key=pi+"_"+si+"_"+i;
         var d=workout.data[key];
-        if(d&&(d.kg||d.wdh)&&!d.pre){
+        if(d&&d.kg&&d.wdh&&!d.pre){
           totalSets++;
           var v=d.kg*d.wdh;
           if(slot.unilat) v*=2;          // einarmig: Wert gilt je Seite
           totalVol+=v;
           if(!satz.wu){wsSets++;wsVol+=v;}
-          arr.push({kg:d.kg,wdh:d.wdh,type:(satz.type||"ws"),name:satz.name,wu:!!satz.wu,uni:!!slot.unilat});
+          var r={kg:d.kg,wdh:d.wdh,type:(satz.type||"ws"),name:satz.name,wu:!!satz.wu,uni:!!slot.unilat};
+          if(slot.fremd) r.fremd=true;
+          arr.push(r);
         } else {
           arr.push(null);
         }
