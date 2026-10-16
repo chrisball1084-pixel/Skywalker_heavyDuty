@@ -819,6 +819,19 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 .fw-notiz:focus{outline:none;border-color:var(--t-acc2)}
 .fremd-badge{display:inline-block;margin-left:6px;padding:1px 6px;border:1px solid var(--gold);
   color:var(--gold);font-family:var(--t-mono);font-size:8px;letter-spacing:1px;vertical-align:middle}
+.leicht-badge{display:inline-block;margin-left:6px;padding:1px 6px;border:1px solid var(--t-acc2);
+  color:var(--t-acc2);font-family:var(--t-mono);font-size:8px;letter-spacing:1px;vertical-align:middle}
+.fw-notiz-hint{margin-top:7px;font-size:10px;line-height:1.5;color:var(--t-mid)}
+.prev-leer{margin-bottom:12px;padding:9px 11px;background:var(--t-card);border:1px dashed var(--t-bdr2);
+  font-size:11px;line-height:1.5;color:var(--t-mid)}
+.offen-card{margin:0 16px 10px;padding:13px;background:var(--t-card);border:1px solid var(--gold);border-radius:13px}
+.offen-hd{font-family:var(--t-mono);font-size:9px;letter-spacing:1.5px;color:var(--gold);margin-bottom:5px}
+.offen-main{font-size:13px;font-weight:700;color:var(--light)}
+.offen-sub{font-size:11px;color:var(--t-mid);margin-top:3px;line-height:1.4}
+.offen-akt{display:flex;gap:7px;margin-top:10px}
+.offen-akt button{flex:1;padding:8px 4px;background:var(--t-sur);border:1px solid var(--t-bdr2);
+  color:var(--light);font-family:var(--t-mono);font-size:10px;font-weight:700;border-radius:0;cursor:pointer}
+.offen-akt button.del{color:var(--t-mid)}
 .rp-next{margin:14px 0 4px;padding-top:12px;border-top:1px solid var(--t-bdr)}
 .rp-next-lbl{font-family:var(--t-mono);font-size:8px;letter-spacing:2px;color:var(--t-mid)}
 .rp-next-ex{font-family:var(--t-mono);font-size:13px;font-weight:700;color:var(--white);margin-top:4px}
@@ -1049,7 +1062,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
   <!-- Bottom action bar -->
   <div class="fw-bottom">
     <button class="fw-btn fw-btn-add" onclick="addFreeExercise()">+ Übung</button>
-    <button class="fw-btn fw-btn-done" onclick="finishFreeWorkout()">✓ Beenden</button>
+    <button class="fw-btn fw-btn-done" onclick="finishFreeWorkout()">✓ Speichern</button>
   </div>
 </div>
 
@@ -1562,7 +1575,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.19.0";
+var APP_VERSION = "v6.20.0";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -1895,7 +1908,7 @@ var MOD_ICON = {Joggen:"🏃",Fahrrad:"🚴",Schwimmen:"🏊",Rucking:"🎒"};
 // STATE
 // ══════════════════════════════════
 var state = {philId:null,plans:null,defaultTimer:120,history:[],mesoWeek:1,forceFree:false,autoPause:true,repCeiling:REP_CEILING_DEFAULT,bodyWeight:null,cycleStart:0};
-var workout = {plan:null,pairIdx:0,satzIdx:0,data:{},swapData:{},startTime:null,notiz:"",fremd:false};
+var workout = {plan:null,pairIdx:0,satzIdx:0,data:{},swapData:{},startTime:null,notiz:"",fremd:false,leicht:false,nachtrag:false,zuletzt:0};
 var timer = {endTime:0,total:120,remaining:120,interval:null,paused:false,pausedAt:0};
 var cardioState = {protoId:"zone2",modality:"Joggen",duration:45};
 var activeTab = "overview";
@@ -2035,6 +2048,7 @@ function saveActiveWorkout(){
       startTimeStr:workout.startTimeStr,
       notiz:workout.notiz||"",
       fremd:!!workout.fremd,
+      leicht:!!workout.leicht,
       mesoWeek:state.mesoWeek,
       savedAt:Date.now()
     };
@@ -2046,11 +2060,14 @@ function loadActiveWorkout(){
     var raw=localStorage.getItem("sw51_active");
     if(!raw) return null;
     var snap=JSON.parse(raw);
-    // Drop sessions older than 12 hours — almost certainly abandoned
-    if(snap.savedAt && (Date.now()-snap.savedAt) > 12*60*60*1000){
+    var alter = Date.now()-(snap.savedAt||Date.now());
+    // Aelter als 14 Tage ist sicher Altlast. Alles darunter bleibt liegen,
+    // bis es ausdruecklich gespeichert oder verworfen wird.
+    if(alter > 14*24*60*60*1000){
       localStorage.removeItem("sw51_active");
       return null;
     }
+    snap.veraltet = alter > 12*60*60*1000;
     return snap;
   }catch(e){return null;}
 }
@@ -2730,12 +2747,20 @@ function renderWorkoutNotiz(){
        'oninput="setWorkoutNotiz(this.value)">'+esc(workout.notiz||"")+'</textarea>';
   h += '<button class="fo-uni'+(workout.fremd?" on":"")+'" onclick="toggleFremd()">'+
        (workout.fremd?"☑":"☐")+' FREMDES GYM · NICHT ALS VORGABE</button>';
+  h += '<button class="fo-uni'+(workout.leicht?" on":"")+'" style="margin-top:6px" onclick="toggleLeicht()">'+
+       (workout.leicht?"☑":"☐")+' REDUZIERT · NICHT ALS VORGABE</button>';
+  h += '<div class="fw-notiz-hint">Reduziert = bewusst leichter (müde, krank, angeschlagen). Die Einheit zählt in der Statistik, aber das nächste Ziel richtet sich nach dem letzten vollen Training.</div>';
   h += '</div>';
   return h;
 }
 function setWorkoutNotiz(v){ workout.notiz = v; saveActiveWorkout(); }
 function toggleFremd(){
   workout.fremd = !workout.fremd;
+  saveActiveWorkout();
+  renderFreeList();
+}
+function toggleLeicht(){
+  workout.leicht = !workout.leicht;
   saveActiveWorkout();
   renderFreeList();
 }
@@ -3091,7 +3116,53 @@ function naechsterSplitHtml(kompakt){
 }
 function renderNextUp(){
   var el = document.getElementById("next-up");
-  if(el) el.innerHTML = deloadBannerHtml() + naechsterSplitHtml(true);
+  if(el) el.innerHTML = offenesTrainingHtml() + deloadBannerHtml() + naechsterSplitHtml(true);
+}
+
+// ── Nicht gespeichertes Training ──────────────────────────
+// Der Fortschritt liegt durchgehend im Speicher, landet aber erst beim
+// Speichern in der Historie. Bis dahin zaehlt die Einheit nirgends mit —
+// auch nicht fuer den naechsten Split. Deshalb sichtbar halten.
+function offenesDatum(snap){
+  var t = snap && (snap.startTime||snap.savedAt);
+  return t ? new Date(t).toLocaleDateString("de-DE") : "?";
+}
+function offenesTrainingHtml(){
+  if(workout && workout.plan) return "";          // laeuft gerade sowieso
+  var snap = loadActiveWorkout();
+  if(!snap || !snap.plan || !snap.veraltet) return "";
+  var h = '<div class="offen-card">';
+  h += '<div class="offen-hd">Nicht gespeichert</div>';
+  h += '<div class="offen-main">'+esc(snap.plan.name||"Training")+' · '+offenesDatum(snap)+'</div>';
+  h += '<div class="offen-sub">Fehlt in Historie, Statistik und im nächsten Split.</div>';
+  h += '<div class="offen-akt">';
+  h += '<button onclick="offenesSpeichern()">Speichern</button>';
+  h += '<button onclick="offenesFortsetzen()">Weitertrainieren</button>';
+  h += '<button class="del" onclick="offenesVerwerfen()">Verwerfen</button>';
+  h += '</div></div>';
+  return h;
+}
+function offenesFortsetzen(){
+  var snap = loadActiveWorkout();
+  if(snap && snap.plan) resumeActiveWorkout(snap);
+}
+// Nachtragen: Datum und Uhrzeit kommen aus dem Training selbst, nicht aus
+// dem Moment des Speicherns — sonst stuende die Einheit am falschen Tag.
+function offenesSpeichern(){
+  var snap = loadActiveWorkout();
+  if(!snap || !snap.plan) return;
+  resumeActiveWorkout(snap);
+  workout.nachtrag = true;
+  workout.zuletzt = snap.savedAt || Date.now();
+  finishWorkout();
+}
+function offenesVerwerfen(){
+  var snap = loadActiveWorkout();
+  askConfirm("Training verwerfen?",
+    (snap&&snap.plan?snap.plan.name+" vom "+offenesDatum(snap):"Das Training")+
+    " wird gelöscht und taucht nirgends mehr auf.",
+    function(){ discardActiveWorkout(); },
+    {icon:"⚠️", yes:"Verwerfen", no:"Behalten"});
 }
 function renderDashNext(){
   var el = document.getElementById("dash-next");
@@ -3282,7 +3353,7 @@ function renderVerlauf(){
     html += '<div class="vl-item'+(offen?" open":"")+'" style="--c:'+(plan?plan.color:"var(--t-bdr2)")+'">';
     html += '<div class="vl-head" onclick="toggleVerlauf('+idx+')">';
     html += '<div class="vl-ico">'+(plan?plan.icon:"🏋️")+'</div>';
-    html += '<div class="vl-main"><div class="vl-plan">'+esc(e.planName||"Workout")+(e.fremd?'<span class="fremd-badge">FREMD</span>':"")+'</div>';
+    html += '<div class="vl-main"><div class="vl-plan">'+esc(e.planName||"Workout")+(e.fremd?'<span class="fremd-badge">FREMD</span>':"")+(e.leicht?'<span class="leicht-badge">REDUZIERT</span>':"")+'</div>';
     html += '<div class="vl-datum">'+esc(e.weekday||"")+' · '+esc(e.date)+
             (e.startTime? ' · '+esc(e.startTime)+(e.endTime?"–"+esc(e.endTime):"") : "")+'</div>';
     html += '<div class="vl-sum">'+sum+'</div></div>';
@@ -3393,6 +3464,7 @@ function renderHistDetail(){
   kopf += '<div class="exd-sub">'+(e.totalSets||0)+' Sätze · '+Math.round(e.totalVol||0)+' kg'+
           (bearb? ' · <span style="color:var(--t-acc2)">Bearbeiten</span>' : "")+'</div>';
   if(e.fremd) kopf += '<div class="exd-sub" style="margin-top:4px"><span class="fremd-badge" style="margin-left:0">FREMDES GYM · KEINE VORGABE</span></div>';
+  if(e.leicht) kopf += '<div class="exd-sub" style="margin-top:4px"><span class="leicht-badge" style="margin-left:0">REDUZIERT · KEINE VORGABE</span></div>';
   if(e.notiz && !bearb) kopf += '<div class="exd-sub" style="margin-top:4px">'+esc(e.notiz)+'</div>';
   document.getElementById("hist-kopf").innerHTML = kopf;
 
@@ -3405,6 +3477,8 @@ function renderHistDetail(){
          'oninput="histSetNotiz(this.value)">'+esc(e.notiz||"")+'</textarea>';
     h += '<button class="fo-uni'+(e.fremd?" on":"")+'" onclick="histToggleFremd()">'+
          (e.fremd?"☑":"☐")+' FREMDES GYM · NICHT ALS VORGABE</button>';
+    h += '<button class="fo-uni'+(e.leicht?" on":"")+'" style="margin-top:6px" onclick="histToggleLeicht()">'+
+         (e.leicht?"☑":"☐")+' REDUZIERT · NICHT ALS VORGABE</button>';
     h += '</div>';
   }
   histSlotKeys(e).forEach(function(k){
@@ -3488,6 +3562,11 @@ function histSetNotiz(v){ if(histCtx) histCtx.entwurf.notiz = v; }
 function histToggleFremd(){
   if(!histCtx) return;
   histCtx.entwurf.fremd = !histCtx.entwurf.fremd;
+  renderHistDetail();
+}
+function histToggleLeicht(){
+  if(!histCtx) return;
+  histCtx.entwurf.leicht = !histCtx.entwurf.leicht;
   renderHistDetail();
 }
 function histToggleUni(k){
@@ -3691,6 +3770,7 @@ function saveHistDetail(){
   if(e.notiz) e.notiz = String(e.notiz).trim();
   if(!e.notiz) delete e.notiz;
   if(!e.fremd) delete e.fremd;
+  if(!e.leicht) delete e.leicht;
   state.history[histCtx.idx] = e;
   saveState();
   histCtx.bearbeiten = false;
@@ -3905,7 +3985,7 @@ function uebungAbschliessen(pi, si){
 function lastSessionForPlan(planId){
   for(var i=state.history.length-1;i>=0;i--){
     var h=state.history[i];
-    if(h.type==="workout" && h.planId===planId && !h.fremd) return h;
+    if(h.type==="workout" && h.planId===planId && zaehltAlsVorgabe(h)) return h;
   }
   return null;
 }
@@ -4115,6 +4195,29 @@ function bestaetigeSlotSaetze(pi, si){
   return n;
 }
 
+// Warum keine Vorwerte da sind. Die haeufigsten Faelle sind: Uebung zum
+// ersten Mal (oder unter neuem Namen) im Plan, oder es gibt sie nur in
+// Einheiten, die ausdruecklich nicht als Vorgabe zaehlen.
+function vorwerteGrund(ueb){
+  var ausgeschlossen = null;
+  for(var i=state.history.length-1;i>=0;i--){
+    var h=state.history[i];
+    if(!h.sets||!h.slotMeta||zaehltAlsVorgabe(h)) continue;
+    for(var k in h.slotMeta){
+      if(h.slotMeta[k]!==ueb) continue;
+      var arr=h.sets[k];
+      if(arr && arr.some(function(x){return x&&x.kg&&x.wdh;})){ ausgeschlossen=h; break; }
+    }
+    if(ausgeschlossen) break;
+  }
+  if(ausgeschlossen){
+    return "Keine Vorwerte — diese Übung steht zuletzt am "+esc(ausgeschlossen.date)+
+           " in einer Einheit, die als "+(ausgeschlossen.fremd?"fremdes Gym":"reduziert")+
+           " markiert ist und deshalb nicht als Vorgabe zählt.";
+  }
+  return "Keine Vorwerte — erste Einheit mit dieser Übung unter diesem Namen.";
+}
+
 function renderFocus(){
   if(!focusCtx) return;
   var pi=focusCtx.pi, si=focusCtx.si;
@@ -4134,6 +4237,11 @@ function renderFocus(){
 
   var html="";
 
+  // Ohne Vorwerte stand hier bisher gar nichts — nicht zu unterscheiden von
+  // "Anzeige kaputt". Jetzt sagt die Ansicht, warum nichts da ist.
+  if(!(prev && prev.some(function(x){return x&&x.kg&&x.wdh;}))){
+    html+='<div class="prev-leer">'+vorwerteGrund(slot.ueb)+'</div>';
+  }
   // Vorschau der letzten Einheit als Kartenreihe — identisch zum gefuehrten Modus
   if(prev && prev.some(function(x){return x&&x.kg&&x.wdh;})){
     var lastH=lastSessionForPlan(workout.plan.id);
@@ -4758,7 +4866,7 @@ function finishFreeWorkout(){
   // Nichts eingetragen: Beenden wuerde eine leere Einheit speichern.
   if(f.erledigt===0){
     askConfirm("Noch nichts eingetragen",
-      "Es ist kein einziger Satz erfasst. Beim Beenden wird nichts gespeichert.",
+      "Es ist kein einziger Satz erfasst. Es gibt nichts zu speichern.",
       function(){ pauseFreeTimer(); abortFreeWorkout(); },
       {icon:"⚠️", yes:"Training verwerfen", no:"Weitertrainieren"});
     return;
@@ -4769,7 +4877,7 @@ function finishFreeWorkout(){
     askConfirm("Noch " + f.offen + " von " + f.gesamt + " Sätzen offen",
       "Offen: " + liste + "\n\nNicht eingetragene Sätze zählen nicht in die Historie.",
       function(){ pauseFreeTimer(); finishMitNotizAbfrage(); },
-      {icon:"🏁", yes:"Trotzdem beenden", no:"Weitertrainieren"});
+      {icon:"🏁", yes:"Trotzdem speichern", no:"Weitertrainieren"});
     return;
   }
   pauseFreeTimer();
@@ -4780,9 +4888,9 @@ function finishFreeWorkout(){
 // gesetzten Merker einmal nachfragen, damit die Einheit nicht stillschweigend
 // zur Vorgabe fuer das naechste Training wird.
 function finishMitNotizAbfrage(){
-  if((workout.notiz||"").trim() && !workout.fremd){
+  if((workout.notiz||"").trim() && !workout.fremd && !workout.leicht){
     askConfirm("Abweichendes Setup?",
-      "Du hast eine Notiz hinterlassen. Soll diese Einheit als fremdes Gym gelten und NICHT als Vorgabe für die nächsten Gewichte dienen?",
+      "Du hast eine Notiz hinterlassen. Soll diese Einheit als fremdes Gym gelten und NICHT als Vorgabe für die nächsten Gewichte dienen? (Für eine bewusst leichtere Einheit gibt es darunter den Haken REDUZIERT.)",
       function(){ workout.fremd=true; finishWorkout(); },
       {icon:"🏨", yes:"Ja, fremdes Gym", no:"Nein, ganz normal", onNo:function(){ finishWorkout(); }});
     return;
@@ -4815,7 +4923,7 @@ function downloadBackup(){
 // Flache Tabelle, eine Zeile je Satz — fuer Google Sheets oder Excel.
 // Semikolon und Dezimalkomma, damit deutsche Tabellen die Datei direkt lesen.
 function buildCSV(){
-  var kopf=["Datum","Wochentag","Plan","Runde","Übung","Satz","Typ","kg","Wdh","Unilateral","Volumen","Fremdes Gym","Notiz"];
+  var kopf=["Datum","Wochentag","Plan","Runde","Übung","Satz","Typ","kg","Wdh","Unilateral","Volumen","Fremdes Gym","Reduziert","Notiz"];
   var zeilen=[kopf];
   var z=function(v){ v=String(v==null?"":v); return (/[;"\n]/.test(v)) ? '"'+v.replace(/"/g,'""')+'"' : v; };
   var num=function(n){ return String(n).replace(".",","); };
@@ -4829,7 +4937,7 @@ function buildCSV(){
         var vol=parseFloat(r.kg)*parseFloat(r.wdh)*(r.uni?2:1);
         var notiz=h.sets[k+"_"+i+"_note"]||"";
         zeilen.push([h.date,h.weekday||"",h.planName||"",h.mesoWeek||"",h.slotMeta[k],i+1,HIST_KURZ[normType(r.type)]||r.type||"",
-          num(r.kg),r.wdh,r.uni?"ja":"nein",num(Math.round(vol*10)/10),h.fremd?"ja":"nein",notiz||h.notiz||""]);
+          num(r.kg),r.wdh,r.uni?"ja":"nein",num(Math.round(vol*10)/10),h.fremd?"ja":"nein",h.leicht?"ja":"nein",notiz||h.notiz||""]);
       });
     });
   });
@@ -4946,7 +5054,8 @@ function startWorkout(planIdx){
   var plan=state.plans[planIdx];
   workout.plan=JSON.parse(JSON.stringify(plan));
   workout.pairIdx=0;workout.satzIdx=0;workout.data={};workout.swapData={};
-  workout.notiz="";workout.fremd=false;
+  workout.notiz="";workout.fremd=false;workout.leicht=false;
+  workout.nachtrag=false;workout.zuletzt=0;
   workout.startTime=Date.now();
   workout.startTimeStr=new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
   dismissRPOverlay();
@@ -5175,7 +5284,7 @@ function renderCurrent(){
   var typeName=curSatzObj?curSatzObj.name:"Satz";
   var btnLabel,btnCls;
   if(isLast){
-    btnLabel="🏆 Training beenden";btnCls="confirm-btn success";
+    btnLabel="🏆 Training speichern";btnCls="confirm-btn success";
   } else if(isLastSatz){
     btnLabel="✓ "+typeName+" bestätigen → Nächstes Paar";btnCls="confirm-btn primary";
   } else {
@@ -5378,10 +5487,12 @@ function getLastData(planId,pairIdx,slotIdx,exerciseName,uni){
 // Juengste Einheit mit dieser Uebung. onlyPlan=null durchsucht alle Plaene.
 // uniWunsch (true/false) verlangt zusaetzlich dieselbe Ausfuehrungsart;
 // undefined nimmt die juengste Einheit unabhaengig davon.
+function zaehltAlsVorgabe(h){ return !!h && !h.fremd && !h.leicht; }
+
 function findLastByName(exerciseName, onlyPlan, uniWunsch){
   for(var i=state.history.length-1;i>=0;i--){
     var h=state.history[i];
-    if(!h.sets||!h.slotMeta||h.fremd) continue;
+    if(!h.sets||!h.slotMeta||!zaehltAlsVorgabe(h)) continue;
     if(onlyPlan && h.planId!==onlyPlan) continue;
     for(var k in h.slotMeta){
       if(h.slotMeta[k]!==exerciseName) continue;
@@ -5400,7 +5511,7 @@ function findLastByName(exerciseName, onlyPlan, uniWunsch){
 function getLastDataByPosition(planId,pairIdx,slotIdx){
   for(var i=state.history.length-1;i>=0;i--){
     var h=state.history[i];
-    if(!h.sets||h.fremd) continue;
+    if(!h.sets||!zaehltAlsVorgabe(h)) continue;
     // No name given — old behaviour (same-plan, same-position)
     if(h.planId===planId){
       var k2=pairIdx+"_"+slotIdx;
@@ -5920,6 +6031,8 @@ function undoLastSatzFromPause(){
 // ══════════════════════════════════
 function finishWorkout(){
   clearInterval(timer.interval);
+  // Ein nachgetragenes Training endete, als zuletzt daran gearbeitet wurde.
+  var endeMs = (workout.nachtrag && workout.zuletzt) ? workout.zuletzt : Date.now();
   // In guided mode, flush any in-progress input boxes from the DOM.
   // In free mode, data is already in workout.data via input listeners.
   if(workout.plan && !isFreeMode(workout.plan)){
@@ -5928,8 +6041,8 @@ function finishWorkout(){
   // Vorbelegte Saetze, die nachweislich ausgefuehrt wurden, nicht verwerfen
   bestaetigeImpliziteSaetze();
   var plan=workout.plan;
-  var endTimeStr=new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
-  var elapsed=Math.round((Date.now()-workout.startTime)/60000);
+  var endTimeStr=new Date(endeMs).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+  var elapsed=Math.max(0, Math.round((endeMs-workout.startTime)/60000));
   var totalSets=0,totalVol=0,wsSets=0,wsVol=0,setsMap={},slotMeta={};
   plan.paare.forEach(function(pair,pi){
     pair.slots.forEach(function(slot,si){
@@ -5960,7 +6073,10 @@ function finishWorkout(){
       }
     });
   });
-  var now=new Date(),days=["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+  // Der Tag der Einheit ist der Tag, an dem sie begonnen hat — nicht der des
+  // Speicherns. Das trifft ein nachgetragenes Training wie auch eines, das
+  // ueber Mitternacht laeuft.
+  var now=new Date(workout.startTime||Date.now()),days=["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
   var entry={type:"workout",planId:plan.id,planName:plan.name,philId:state.philId||"",
     date:now.toLocaleDateString("de-DE"),weekday:days[now.getDay()],
     startTime:workout.startTimeStr||"",endTime:endTimeStr,
@@ -5969,6 +6085,7 @@ function finishWorkout(){
     sets:setsMap,slotMeta:slotMeta,saetzeSnapshot:JSON.parse(JSON.stringify(plan.paare)),swaps:workout.swapData};
   if((workout.notiz||"").trim()) entry.notiz=workout.notiz.trim();
   if(workout.fremd) entry.fremd=true;
+  if(workout.leicht) entry.leicht=true;
   state.history.push(entry);saveState();
   clearActiveWorkout(); // workout finished cleanly — drop the recovery snapshot
 
@@ -6519,7 +6636,8 @@ function resumeActiveWorkout(snap){
   workout.swapData=snap.swapData||{};
   workout.startTime=snap.startTime||Date.now();
   workout.startTimeStr=snap.startTimeStr||new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
-  workout.notiz=snap.notiz||""; workout.fremd=!!snap.fremd;
+  workout.notiz=snap.notiz||""; workout.fremd=!!snap.fremd; workout.leicht=!!snap.leicht;
+  workout.nachtrag=false; workout.zuletzt=0;
   activeTab="overview";
   if(workout.plan && isFreeMode(workout.plan)){
     renderFreeWorkout();
@@ -6579,6 +6697,18 @@ document.addEventListener("DOMContentLoaded",function(){
     if(snap&&snap.plan){
       // Defer slightly so the home screen settles first
       setTimeout(function(){
+        if(snap.veraltet){
+          // Nichts wegwerfen, was Arbeit war: Standard ist Speichern, und wer
+          // "Spaeter" waehlt, findet das Training auf der Startseite wieder.
+          askConfirm(
+            "Nicht gespeichertes Training",
+            (snap.plan.name||"?")+" vom "+offenesDatum(snap)+
+            "\n\nDas Training wurde nie gespeichert und fehlt deshalb in der Historie und im nächsten Split.",
+            function(){ offenesSpeichern(); },
+            {icon:"💾", yes:"Jetzt speichern", no:"Später"}
+          );
+          return;
+        }
         var minsAgo=Math.round((Date.now()-(snap.savedAt||Date.now()))/60000);
         var ago=minsAgo<1?"gerade eben":minsAgo<60?(minsAgo+" Min."):(Math.round(minsAgo/60)+" Std.");
         askConfirm(
