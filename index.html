@@ -1575,7 +1575,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.21.0";
+var APP_VERSION = "v6.22.0";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
@@ -1601,8 +1601,8 @@ var DB = {
   "Brust":     {muster:"Upper Push",uebungen:["Flachbankdrücken KH","Schrägbankdrücken KH","Flachbankdrücken LH","Schrägbankdrücken LH","Kabel-Flys","Peck Deck","Dips (Brust)","Brustpresse Maschine","Chest Fly Maschine"]},
   "Schultern": {muster:"Upper Push",uebungen:["Schulterdrücken KH","Militärpress LH","Arnold Press","Seitheben KH","Seitheben Kabel","Seitheben Maschine","Reverse Flys Maschine","Face Pulls Kabel"]},
   "Trizeps":   {muster:"Upper Push",uebungen:["Trizepsdrücken Kabel (Seil)","Trizepsdrücken Kabel einarmig","Overhead-Trizeps Kabel","Skull Crushers","Close-Grip Bankdrücken","Pushdown V-Griff","Overhead-Extension KH","Dips (Trizeps)"]},
-  "Rücken":    {muster:"Upper Pull",uebungen:["Latzug breit","Latzug eng (Untergriff)","Seilzug-Rudern","Klimmzüge","Langhantelrudern","Brustgest. Rudern LH","T-Bar Rudern","Rudermaschine","Pullover Maschine"]},
-  "Bizeps":    {muster:"Upper Pull",uebungen:["SZ-Curls","LH-Curls","KH-Curls alternierend","Hammercurls","Kabel-Curls","Scott-Curls Maschine","Konzentrationscurls"]},
+  "Rücken":    {muster:"Upper Pull",uebungen:["Latzug breit","Latzug eng (Untergriff)","Seilzug-Rudern","Klimmzüge","Langhantelrudern","Brustgest. Rudern LH","T-Bar Rudern","Rudermaschine","Kurzhantel Pullover","Pullover Maschine"]},
+  "Bizeps":    {muster:"Upper Pull",uebungen:["SZ-Curls","LH-Curls","KH-Curls alternierend","Hammercurls","Kabel-Curls","Scott-Curls Maschine","Konzentrationscurls","Latzug eng Untergriff (Bizeps)"]},
   "Quadrizeps":{muster:"Lower Push",uebungen:["Beinpresse","Kniebeuge LH","Hack Squat","Beinstrecker Maschine","Bulgarian Split Squat","Front Squat","Ausfallschritte","Goblet Squat"]},
   "Glutes":    {muster:"Lower Push",uebungen:["Reverse Lunge","Hip Thrust LH","Hip Thrust Maschine","Sumo-Kreuzheben","Glute Kickback Kabel","Hyperextensions"]},
   "Hamstrings":{muster:"Lower Pull",uebungen:["Rumänisches Kreuzheben (RDL)","Beinbeuger sitzend","Beinbeuger liegend","Nordic Curls","Stiff-Leg Deadlift","Good Mornings","Cable Pull-Through","Kreuzheben LH"]},
@@ -1626,6 +1626,7 @@ var MUSKEL = {
   "Seilzug-Rudern":"Latissimus, Rhomboiden","Klimmzüge":"Latissimus dorsi",
   "Langhantelrudern":"Latissimus, Rhomboiden, Trapezius","Brustgest. Rudern LH":"Latissimus, Rhomboiden",
   "T-Bar Rudern":"Latissimus, Rhomboiden","Rudermaschine":"Rhomboiden, Trapezius","Pullover Maschine":"Latissimus dorsi",
+  "Kurzhantel Pullover":"Latissimus dorsi","Latzug eng Untergriff (Bizeps)":"Bizeps + Latissimus",
   "SZ-Curls":"Bizeps brachii","LH-Curls":"Bizeps brachii","KH-Curls alternierend":"Bizeps brachii",
   "Hammercurls":"Brachialis, Brachioradialis","Kabel-Curls":"Bizeps brachii",
   "Scott-Curls Maschine":"Bizeps (langer Kopf)","Konzentrationscurls":"Bizeps brachii",
@@ -1877,7 +1878,7 @@ var PHILOSOPHIES = {
       {id:"SKY_A",name:"Chest & Back",icon:"💪",sub:"Pre-Exhaust SS · HIT · Skywalker Split",color:"#00f5ff",mode:"free",
        paare:[
         {slots:[{kat:"Brust",ueb:"Chest Fly Maschine",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"Brust",ueb:"Schrägbankdrücken LH",saetze:JSON.parse(JSON.stringify(S_SKY_SS))}]},
-        {slots:[{kat:"Rücken",ueb:"Pullover Maschine",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"Rücken",ueb:"Latzug eng (Untergriff)",saetze:JSON.parse(JSON.stringify(S_SKY_SS))}]},
+        {slots:[{kat:"Rücken",ueb:"Kurzhantel Pullover",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"Rücken",ueb:"Latzug eng (Untergriff)",saetze:JSON.parse(JSON.stringify(S_SKY_SS))}]},
         {slots:[{kat:"Core",ueb:"Hängendes Beinheben",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"— (leer)",ueb:"— (leer)",saetze:[]}]}
        ]},
       {id:"SKY_B",name:"Legs",icon:"🦵",sub:"Pre-Exhaust · Kniebeugen · RDL · Waden",color:"#00C8AA",mode:"free",
@@ -1890,7 +1891,7 @@ var PHILOSOPHIES = {
        paare:[
         {slots:[{kat:"Schultern",ueb:"Seitheben KH",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"Schultern",ueb:"Schulterdrücken KH",saetze:JSON.parse(JSON.stringify(S_SKY_SS))}]},
         {slots:[{kat:"Schultern",ueb:"Reverse Flys Maschine",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"— (leer)",ueb:"— (leer)",saetze:[]}]},
-        {slots:[{kat:"Bizeps",ueb:"KH-Curls alternierend",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"Rücken",ueb:"Latzug eng (Untergriff)",saetze:JSON.parse(JSON.stringify(S_SKY_SS))}]},
+        {slots:[{kat:"Bizeps",ueb:"KH-Curls alternierend",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"Bizeps",ueb:"Latzug eng Untergriff (Bizeps)",saetze:JSON.parse(JSON.stringify(S_SKY_SS))}]},
         {slots:[{kat:"Trizeps",ueb:"Trizepsdrücken Kabel (Seil)",saetze:JSON.parse(JSON.stringify(S_SKY))},{kat:"Trizeps",ueb:"Dips (Trizeps)",saetze:JSON.parse(JSON.stringify(S_SKY_SS))}]}
        ]}
     ]
@@ -1949,6 +1950,8 @@ function loadState(){
     var bw=localStorage.getItem("sw51_bw"); state.bodyWeight=bw?parseFloat(bw):null;
     var cy=localStorage.getItem("sw51_cyc"); state.cycleStart=cy?parseInt(cy):0;
     migrateKreuzhebenZuRDL();
+    migratePullover();
+    migrateLatzugBizeps();
   }catch(e){}
 }
 
@@ -1970,6 +1973,67 @@ function migrateKreuzhebenZuRDL(){
   saveState();
   return n;
 }
+// ── Migration v6.22.0 ───────────────────────────────────
+// Die "Pullover Maschine" wurde nie an der Maschine ausgefuehrt, sondern von
+// Anfang an mit der Kurzhantel. Beide Namen liefen parallel in der Historie,
+// damit zerfiel eine einzige Uebung in zwei Verlaeufe. Zusammengelegt wird
+// auf den Namen, der die Ausfuehrung beschreibt.
+var MIG_PULLOVER_KEY="sw51_mig_pullover";
+function migratePullover(){
+  if(localStorage.getItem(MIG_PULLOVER_KEY)==="1") return 0;
+  var n=renameExerciseInHistory("Pullover Maschine","Kurzhantel Pullover");
+  migratePlanPullover();
+  try{ localStorage.setItem(MIG_PULLOVER_KEY,"1"); }catch(e){}
+  saveState();
+  return n;
+}
+function migratePlanPullover(){
+  if(!state.plans) return;
+  state.plans.forEach(function(plan){
+    plan.paare.forEach(function(paar){
+      paar.slots.forEach(function(slot){
+        if(slot.ueb==="Pullover Maschine"){ slot.kat="Rücken"; slot.ueb="Kurzhantel Pullover"; }
+      });
+    });
+  });
+}
+
+// ── Migration v6.22.0 ───────────────────────────────────
+// Der enge Latzug im Untergriff laeuft an zwei Tagen: am Rueckentag schwer
+// als Zugübung, am Armtag leichter als Bizepsarbeit im Superset. Unter einem
+// Namen ergaben beide zusammen eine Progressionskurve, die es so nie gab
+// (84 kg gegen 75 kg). Der Armtag bekommt deshalb einen eigenen Namen.
+var MIG_LATBIZ_KEY="sw51_mig_latzugbiz";
+var LAT_ALT="Latzug eng (Untergriff)", LAT_BIZ="Latzug eng Untergriff (Bizeps)";
+function migrateLatzugBizeps(){
+  if(localStorage.getItem(MIG_LATBIZ_KEY)==="1") return 0;
+  var n=0;
+  (state.history||[]).forEach(function(h){
+    if(h.planId!=="SKY_C" || !h.slotMeta) return;      // nur der Arm-Tag
+    Object.keys(h.slotMeta).forEach(function(k){
+      if(h.slotMeta[k]!==LAT_ALT) return;
+      h.slotMeta[k]=LAT_BIZ; n++;
+      var arr=h.sets&&h.sets[k];
+      if(Array.isArray(arr)) arr.forEach(function(s){ if(s&&s.name===LAT_ALT) s.name=LAT_BIZ; });
+    });
+  });
+  migratePlanLatzugBizeps();
+  try{ localStorage.setItem(MIG_LATBIZ_KEY,"1"); }catch(e){}
+  saveState();
+  return n;
+}
+function migratePlanLatzugBizeps(){
+  if(!state.plans) return;
+  state.plans.forEach(function(plan){
+    if(plan.id!=="SKY_C") return;
+    plan.paare.forEach(function(paar){
+      paar.slots.forEach(function(slot){
+        if(slot.ueb===LAT_ALT){ slot.kat="Bizeps"; slot.ueb=LAT_BIZ; }
+      });
+    });
+  });
+}
+
 // Der Plan liegt gespeichert im localStorage — die neue Fassung in PHILOSOPHIES
 // erreicht ein bestehendes Setup sonst nie. Deshalb hier dieselbe Umstellung
 // noch einmal auf den gespeicherten Plaenen: RDL wandert zu Legs, bei
@@ -5039,6 +5103,22 @@ function doRestoreBackup(ev,f){
       // wird deshalb auf den eingespielten Daten erneut angewendet.
       renameExerciseInHistory("Kreuzheben LH","Rumänisches Kreuzheben (RDL)");
       migratePlanRDL();
+      // Ein aelteres Backup bringt die alten Uebungsnamen zurueck. Die Merker
+      // stehen laengst auf "erledigt", deshalb hier direkt anwenden.
+      renameExerciseInHistory("Pullover Maschine","Kurzhantel Pullover");
+      migratePlanPullover();
+      (function(){
+        (state.history||[]).forEach(function(h){
+          if(h.planId!=="SKY_C" || !h.slotMeta) return;
+          Object.keys(h.slotMeta).forEach(function(k){
+            if(h.slotMeta[k]!==LAT_ALT) return;
+            h.slotMeta[k]=LAT_BIZ;
+            var arr=h.sets&&h.sets[k];
+            if(Array.isArray(arr)) arr.forEach(function(s){ if(s&&s.name===LAT_ALT) s.name=LAT_BIZ; });
+          });
+        });
+        migratePlanLatzugBizeps();
+      })();
       saveState();
       showToast("Backup wiederhergestellt");
       renderStats();renderHome();

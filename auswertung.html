@@ -335,6 +335,7 @@ img{max-width:100%}
         <input type="search" id="ex-search" placeholder="Übung suchen…" aria-label="Übung suchen">
         <select id="ex-kat" aria-label="Muskelgruppe filtern"></select>
         <select id="ex-sort" aria-label="Sortierung">
+          <option value="plan">Trainingsreihenfolge</option>
           <option value="sets">Nach Satzanzahl</option>
           <option value="name">Alphabetisch</option>
           <option value="trend">Nach Trend</option>
@@ -521,6 +522,7 @@ function derive(state, opts){
         var uni = !!s.uni;
         entries.push({
           slot: key, exercise: name, rawExercise: rawName, mislabeled: mislabeled,
+          ordPlan: planIdx[e.planId] != null ? planIdx[e.planId] : 99, ordPi: pi, ordSi: si,
           kat: kat, type: type, work: work,
           kg: kg, wdh: wdh, vol: kg * wdh * (uni ? 2 : 1), uni: uni,
           incomplete: !(wdh > 0),
@@ -638,11 +640,15 @@ function derive(state, opts){
       if (!ex) {
         ex = exMap[x.exercise] = {
           name: x.exercise, kat: x.kat, sets: 0, workSets: 0, vol: 0,
+          ordPlan: 99, ordPi: 99, ordSi: 99,
           kgMin: Infinity, kgMax: 0, uni: false, incomplete: 0, mislabeled: 0,
           rawNames: {}, bwSets: 0, usesBodyWeight: false, sessions: [], byDate: {}
         };
       }
       if (x.kat && x.kat !== "Ohne Kategorie") ex.kat = x.kat;
+      /* Die Einheiten laufen chronologisch durch — am Ende steht die Position
+         aus dem juengsten Training, nicht aus einem laengst geaenderten Plan. */
+      ex.ordPlan = x.ordPlan; ex.ordPi = x.ordPi; ex.ordSi = x.ordSi;
       ex.sets++;
       ex.rawNames[x.rawExercise] = true;
       if (x.uni) ex.uni = true;
@@ -1218,6 +1224,10 @@ function renderExercises(){
   });
   var rank = { up: 0, fl: 1, dn: 2, na: 3 };
   list.sort(function(a, b){
+    /* Wie trainiert wird: Brust und Ruecken, dann Beine, dann Schultern und
+       Arme — innerhalb des Tages in der Reihenfolge der Uebungen. */
+    if (sort === "plan") return (a.ordPlan - b.ordPlan) || (a.ordPi - b.ordPi) ||
+                                (a.ordSi - b.ordSi) || a.name.localeCompare(b.name, "de");
     if (sort === "name") return a.name.localeCompare(b.name, "de");
     if (sort === "recent") return (b.lastDate || 0) - (a.lastDate || 0);
     if (sort === "trend") return (rank[a.trend] - rank[b.trend]) || (b.workSets - a.workSets);
