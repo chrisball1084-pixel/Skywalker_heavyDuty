@@ -534,6 +534,25 @@ html.theme-arnold .done-btn.copy{background:#F5A623;color:#000}
 .toast{position:fixed;bottom:calc(80px + var(--sb));left:50%;transform:translateX(-50%) translateY(20px);background:var(--green);color:var(--white);padding:10px 20px;font-size:13px;font-weight:700;font-family:'Space Mono',monospace;opacity:0;transition:all .3s;z-index:200;white-space:nowrap;pointer-events:none}
 html.theme-mentzer .toast{background:#ff0090;box-shadow:0 0 20px rgba(255,0,144,.5)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ── Auswertungs-Palette ──────────────────────────────────────────────
+   Dashboard und die Karte "Was steht an" laufen im ruhigeren Farbschema
+   der Auswertungsseite statt im Neon des jeweiligen Themes: Zahlen und
+   Kurven sind darin besser zu lesen. Nur Token werden ueberschrieben,
+   kein Markup — die Bausteine darunter bleiben unveraendert.
+   Bewusst nicht auf die ganze App angewandt: die Themes gehoeren zur
+   gewaehlten Philosophie und bleiben, wo trainiert wird. */
+#dash-screen, #next-up{
+  --t-sur:#0E1720;--t-card:#121a22;--t-bdr:#243442;--t-bdr2:#2f4354;
+  --t-acc:#e5534b;--t-acc2:#00f5ff;--t-mid:#a3b4c2;--t-dim:#18232d;
+  --white:#e8eef3;--light:#d3dde5;
+  --green:#3fb950;--gold:#c9a227;--blue:#4a9eff;
+}
+#dash-screen{background:#0b1016}
+/* Auf der Startseite steht die Karte zwischen Elementen im Theme-Farbton.
+   Ein eigener Rahmen statt der Akzentfarbe haelt sie ruhig. */
+#next-up .next-card{border-color:#2f4354}
+#next-up .next-days{color:#00f5ff}
+
 .generic-hdr{padding:14px 16px 12px;background:var(--t-sur);border-bottom:1px solid var(--t-bdr);display:flex;align-items:center;gap:10px;flex-shrink:0}
 .generic-hdr-title{font-family:var(--t-mono);font-size:14px;font-weight:700;color:var(--white)}
 @keyframes npulse{0%,100%{opacity:1}50%{opacity:.78}}
@@ -1575,7 +1594,7 @@ html.theme-mentzer .fo-state.done{text-shadow:0 0 8px rgba(0,245,255,.5)}
 // ══════════════════════════════════
 // CONSTANTS & HELPERS
 // ══════════════════════════════════
-var APP_VERSION = "v6.23.0";
+var APP_VERSION = "v6.24.0";
 var STORAGE_PREFIX = "sw51_"; // legacy prefix, retain for backwards-compat
 var TIMER_CIRCUMFERENCE = 628;       // SVG circle dasharray (2*pi*r where r≈100)
 var KG_STEP = 2.5;
