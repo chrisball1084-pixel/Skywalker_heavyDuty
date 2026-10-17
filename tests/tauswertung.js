@@ -206,6 +206,64 @@ ok("keine Theme-Klassen der App", !/theme-skywalker|theme-mentzer|theme-dorian/.
 ok("eigene Serienfarben gesetzt", /--s-a:\s*#00a6b6/.test(QUELLE));
 ok("eigene Schriftrollen", /--ff-display/.test(QUELLE)&&/--ff-mono/.test(QUELLE));
 
+console.log("\n[15] Arbeitsvolumen je Zyklus");
+// Ein Zyklus ist eine volle Runde durch den Split, dieselbe Regel wie
+// cycleProgress() in der App: erst wenn jeder Plan einmal drin war. Die
+// Testdaten haben acht Mal SKY_A hintereinander — das darf keine acht Runden
+// ergeben, sondern bleibt eine, bis auch SKY_B und SKY_C dabei waren.
+w.setTab("ueberblick");
+const zyk=w.MODEL.cycles;
+ok("zwei Runden erkannt", zyk.length===2);
+// n zaehlt nur gewertete Einheiten; die fremde ist per Vorgabe draussen.
+ok("Wiederholungen eröffnen keine neue Runde", zyk[0].nAlle===10);
+ok("fremde Einheit nicht mitgezählt", zyk[0].n===9);
+ok("erste Runde ist voll", zyk[0].voll===true);
+ok("alle drei Pläne in der ersten Runde", Object.keys(zyk[0].plaeneDrin).length===3);
+ok("zweite Runde läuft noch", zyk[1].voll===false);
+ok("und hat erst eine Einheit", zyk[1].n===1);
+ok("Runden sind durchnummeriert", zyk[0].nr===1&&zyk[1].nr===2);
+ok("Zeitraum je Runde gesetzt", !!zyk[0].von&&!!zyk[0].bis&&zyk[0].bis>=zyk[0].von);
+// Die fremde Einheit markiert die Runde, zaehlt aber nicht ins Volumen.
+const summeZyklen=zyk.reduce((a,c)=>a+c.total,0);
+const summeWochen=w.MODEL.weeks.reduce((a,x)=>a+x.total,0);
+ok("Volumen stimmt mit der Wochensicht überein", Math.abs(summeZyklen-summeWochen)<0.5);
+ok("fremde Einheit markiert die Runde trotzdem", !!zyk[0].plaeneDrin["Shoulders & Arms"]);
+
+console.log("\n[16] Umschalten zwischen Zyklus und Woche");
+const ax=d.getElementById("load-axis");
+ok("Zyklus ist die Vorgabe", ax.value==="cycle");
+ok("Tabelle nennt den Zyklus", d.querySelector("#tb-week th").textContent==="Zyklus");
+ok("Bildunterschrift erklärt die Runde", /volle Runde durch den Split/.test(d.getElementById("cap-week").textContent));
+const saeulenZyklus=d.querySelectorAll("#ch-week svg path").length;
+ax.value="week"; ax.dispatchEvent(new w.Event("change"));
+ok("Wochensicht schaltet um", d.querySelector("#tb-week th").textContent==="Woche ab");
+const saeulenWoche=d.querySelectorAll("#ch-week svg path").length;
+ok("Wochensicht hat mehr Säulen als Runden", saeulenWoche>saeulenZyklus);
+ax.value="cycle"; ax.dispatchEvent(new w.Event("change"));
+ok("zurück auf Zyklus", d.querySelector("#tb-week th").textContent==="Zyklus");
+
+console.log("\n[17] Personal Records");
+const prs=d.querySelectorAll("#pr-list .pr-row");
+ok("Bestwerte gelistet", prs.length===3);
+const prTxt=d.getElementById("pr-list").textContent;
+ok("Latzug dabei", /Latzug eng/.test(prTxt));
+ok("schwerste Last ausgewiesen", /77/.test(prTxt));   // 70+7 aus der letzten A-Einheit
+ok("Datum des Bestwerts dabei", /22\.5\.2026/.test(prTxt));
+ok("gerade aufgestellter Bestwert als neu markiert", /pr-delta up/.test(d.getElementById("pr-list").innerHTML));
+// Die Beinpresse lief unilateral mit 100 kg je Seite — das Gewicht bleibt 100,
+// nur das Volumen zaehlt doppelt.
+ok("unilaterale Last nicht verdoppelt", /100/.test(prTxt)&&!/200/.test(prTxt));
+ok("fremdes Gym nicht unter den Bestwerten", !/Seitheben/.test(prTxt));
+// Sortierungen
+const ps=d.getElementById("pr-sort");
+ps.value="gap"; ps.dispatchEvent(new w.Event("change"));
+const ersteNachAbstand=d.querySelector("#pr-list .pr-name").textContent;
+ps.value="recent"; ps.dispatchEvent(new w.Event("change"));
+const ersteNachDatum=d.querySelector("#pr-list .pr-name").textContent;
+ok("Sortierungen liefern unterschiedliche Reihenfolgen", ersteNachAbstand!==ersteNachDatum);
+ps.value="plan"; ps.dispatchEvent(new w.Event("change"));
+ok("Trainingsreihenfolge ist die Vorgabe", ps.value==="plan"&&d.querySelectorAll("#pr-list .pr-row").length===3);
+
 }catch(e){ console.log("  ✗ Ausnahme: "+e.message+"\n"+e.stack); fails.push("Ausnahme"); }
 
 console.log("\n=========================================");

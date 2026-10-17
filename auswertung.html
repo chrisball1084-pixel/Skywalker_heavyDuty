@@ -154,6 +154,30 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .nbadge.einheit{color:var(--accent);border-color:rgba(0,245,255,.35);background:rgba(0,245,255,.09)}
 mark{background:rgba(0,245,255,.26);color:var(--ink);border-radius:2px}
 
+/* --- Personal Records --- */
+.pr-row{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;
+  padding:11px 0;border-bottom:1px solid var(--line)}
+.pr-row:last-child{border-bottom:0}
+.pr-main{min-width:0}
+.pr-name{font-family:var(--ff-display);font-weight:600;font-size:16px;line-height:1.2;letter-spacing:.01em}
+.pr-sub{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.pr-val{text-align:right;white-space:nowrap}
+.pr-kg{font-family:var(--ff-display);font-weight:700;font-size:21px;line-height:1;
+  font-variant-numeric:tabular-nums;color:var(--accent)}
+.pr-kg .pr-u{font-size:11px;font-weight:500;color:var(--ink-2);margin-left:2px}
+.pr-meta{font-family:var(--ff-mono);font-size:10px;color:var(--ink-3);margin-top:3px;
+  font-variant-numeric:tabular-nums}
+.pr-delta{font-family:var(--ff-mono);font-size:10px;font-weight:500;letter-spacing:.05em;
+  text-transform:uppercase;padding:3px 7px;border-radius:999px;border:1px solid;white-space:nowrap;
+  min-width:72px;text-align:center}
+.pr-delta.up{color:var(--good);border-color:rgba(63,185,80,.45);background:rgba(63,185,80,.12)}
+.pr-delta.fl{color:var(--hold);border-color:rgba(201,162,39,.45);background:rgba(201,162,39,.12)}
+.pr-delta.dn{color:var(--ink-3);border-color:var(--line)}
+@media(max-width:520px){
+  .pr-row{grid-template-columns:1fr auto;gap:8px 12px}
+  .pr-delta{grid-column:2;justify-self:end}
+}
+
 /* --- Hinweis fremdes Gym --- */
 .fgym{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-top:22px;padding:11px 14px;
   background:var(--surface-1);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:9px}
@@ -245,19 +269,41 @@ img{max-width:100%}
     <section class="panel">
       <div class="panel-head">
         <div>
-          <p class="eyebrow">Arbeitsvolumen je Woche</p>
-          <h2>Wie viel Last pro Woche, auf welchen Split</h2>
+          <p class="eyebrow">Arbeitsvolumen</p>
+          <h2>Wie viel Last je Runde, auf welchen Split</h2>
         </div>
+        <select id="load-axis" aria-label="Achse des Volumendiagramms">
+          <option value="cycle">Je Zyklus</option>
+          <option value="week">Je Kalenderwoche</option>
+        </select>
       </div>
       <div class="card">
         <ul class="legend" id="lg-week"></ul>
         <figure>
           <div class="svg-scroll"><div id="ch-week"></div></div>
-          <figcaption>Nur Arbeitssätze (HIT, Back-off, Rest-Pause) — Aufwärmsätze sind nicht enthalten. Volumen = kg × Wdh. Leere Wochen bleiben als Lücke stehen.</figcaption>
+          <figcaption id="cap-week"></figcaption>
         </figure>
         <details class="tbl"><summary>Werte als Tabelle</summary>
           <div class="tbl-scroll" id="tb-week"></div>
         </details>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Bestwerte</p>
+          <h2>Personal Records</h2>
+          <p class="note" style="margin-top:7px">Die schwerste Last, die du in einer Übung bewegt hast. Bei gleichem Gewicht zählt der Satz mit mehr Wiederholungen. Daneben steht, wie weit die letzte Einheit davon entfernt war.</p>
+        </div>
+        <select id="pr-sort" aria-label="Sortierung der Bestwerte">
+          <option value="plan">Trainingsreihenfolge</option>
+          <option value="recent">Neueste zuerst</option>
+          <option value="gap">Größter Abstand</option>
+        </select>
+      </div>
+      <div class="card">
+        <div id="pr-list"></div>
       </div>
     </section>
 
@@ -600,6 +646,55 @@ function derive(state, opts){
     });
   }
 
+  /* Zyklen — eine Runde durch den Split.
+     Dieselbe Regel wie cycleProgress() in der App: Eine Runde ist voll, sobald
+     jeder Plan einmal darin vorkam. Wird ein Plan wiederholt, bevor die Runde
+     voll ist, bleibt er einfach markiert — sonst zählte eine abgebrochene
+     Runde als volle.
+     Die Grenzen kommen aus allWorkouts, nicht aus der gefilterten Liste: sonst
+     verschöbe der Schalter für fremde Gyms die Rundenzählung. Gezählt wird
+     danach nur, was auch sonst zählt. */
+  var cycles = [];
+  if (allWorkouts.length) {
+    var planIds = plans.map(function(p){ return p.id; });
+    if (!planIds.length) planIds = planList.map(function(p){ return p.id; });
+    var zaehlbar = {};
+    planIds.forEach(function(id){ zaehlbar[id] = true; });
+
+    var offen = {}, cur = null;
+    var neueRunde = function(){
+      cur = { nr: cycles.length + 1, byPlan: {}, total: 0, n: 0, nAlle: 0, von: null, bis: null,
+              plaeneDrin: {}, voll: false };
+      cycles.push(cur);
+      offen = {};
+    };
+    neueRunde();
+
+    allWorkouts.forEach(function(w){
+      if (!cur.von) cur.von = w.date;
+      cur.bis = w.date;
+      /* Eine herausgefilterte Einheit (fremdes Gym) markiert die Runde
+         trotzdem — trainiert wurde sie ja —, zählt aber nicht ins Volumen. */
+      if (!(excludeForeign && w.fremd)) {
+        cur.byPlan[w.planName] = (cur.byPlan[w.planName] || 0) + w.workVol;
+        cur.total += w.workVol;
+        cur.n++;
+      }
+      cur.nAlle++;
+      cur.plaeneDrin[w.planName] = true;
+      if (zaehlbar[w.planId]) {
+        offen[w.planId] = true;
+        if (Object.keys(offen).length === planIds.length) {
+          cur.voll = true;
+          if (w !== allWorkouts[allWorkouts.length - 1]) neueRunde();
+        }
+      }
+    });
+    /* Eine am Ende angefangene, noch nicht volle Runde bleibt stehen und wird
+       als laufend ausgewiesen. Eine leere wird verworfen. */
+    if (cycles.length && cycles[cycles.length - 1].n === 0 && !cycles[cycles.length - 1].voll) cycles.pop();
+  }
+
   /* Tage für die Heatmap — hier zählen auch fremde Gyms, sonst sähe der
      Kalender aus, als wäre an dem Tag nicht trainiert worden. */
   var days = {};
@@ -694,6 +789,19 @@ function derive(state, opts){
     var pr = null;
     pts.forEach(function(s){ if (!pr || pick(s).e1rm > pick(pr).e1rm) pr = s; });
     ex.pr = pr;
+
+    /* Schwerste tatsächlich bewegte Last — dieselbe Regel wie die Personal
+       Records in der App: bei gleichem Gewicht gewinnt der Satz mit mehr
+       Wiederholungen, sonst bliebe ein älterer Eintrag stehen, obwohl später
+       dieselbe Last sauberer bewegt wurde. */
+    var topKg = null;
+    pts.forEach(function(s){
+      var m = pick(s);
+      if (!topKg) { topKg = s; return; }
+      var b = pick(topKg);
+      if (m.kg > b.kg || (m.kg === b.kg && m.wdh > b.wdh)) topKg = s;
+    });
+    ex.topKg = topKg;
     ex.first = pts.length ? pts[0] : null;
     ex.last = pts.length ? pts[pts.length - 1] : null;
 
@@ -804,7 +912,7 @@ function derive(state, opts){
     bodyWeight: bw, workouts: workouts, allWorkouts: allWorkouts,
     foreign: foreign, excludeForeign: excludeForeign, metric: metric,
     planList: planList, planColor: planColor,
-    weeks: weeks, days: days, monthList: monthList, katList: katList,
+    weeks: weeks, cycles: cycles, days: days, monthList: monthList, katList: katList,
     exercises: exercises, notes: notes, kpi: kpi,
     quality: q, bwEx: bwEx, scaleEx: scaleEx, jumpEx: jumpEx,
     mislabeledEx: exercises.filter(function(ex){ return ex.mislabeled; })
@@ -865,20 +973,46 @@ function niceMax(v){
   return step * mag;
 }
 
-/* ---- 1) Wochenvolumen, gestapelt nach Plan ---- */
-function chartWeeks(model, host, legendHost, tableHost){
-  var weeks = model.weeks, plans = model.planList;
-  if (!weeks.length) { host.innerHTML = '<p class="empty">Keine Einheiten vorhanden.</p>'; return; }
+/* ---- 1) Arbeitsvolumen je Zyklus oder Woche, gestapelt nach Plan ----
+   Vorgabe ist der Zyklus: eine Runde durch den Split, also alle drei
+   Einheiten in einem Turm. Nach Kalenderwochen zu stapeln verzerrt, sobald
+   mal drei Einheiten in eine Woche fallen und mal zwei — dann vergleicht man
+   Wochen mit unterschiedlich vielen Trainings. Die Wochenansicht bleibt
+   umschaltbar, weil sie für den zeitlichen Abstand das bessere Bild gibt. */
+function chartLoad(model, host, legendHost, tableHost, capHost){
+  var proZyklus = (OPTS.loadAxis !== "week");
+  var reihen, plans = model.planList;
 
-  var bw = 22, padL = 46, padR = 12, padT = 18, padB = 30;
-  var W = Math.max(560, padL + padR + weeks.length * bw), H = 258;
+  if (proZyklus) {
+    reihen = model.cycles.map(function(c){
+      return { byPlan: c.byPlan, total: c.total, n: c.n,
+               kopf: "Zyklus " + c.nr + (c.voll ? "" : " · läuft noch"),
+               achse: String(c.nr),
+               spanne: c.von ? (fmtDS(c.von) + (c.bis && dKey(c.bis) !== dKey(c.von) ? "–" + fmtDS(c.bis) : "")) : "",
+               tage: (c.von && c.bis) ? Math.round((c.bis - c.von) / 864e5) + 1 : null,
+               voll: c.voll, nAlle: c.nAlle,
+               fehlend: plans.filter(function(p){ return !c.plaeneDrin[p.name]; }) };
+    });
+  } else {
+    reihen = model.weeks.map(function(w){
+      return { byPlan: w.byPlan, total: w.total, n: w.n,
+               kopf: "Woche ab " + fmtDS(w.start),
+               achse: (w.start.getDate() <= 7 ? MON[w.start.getMonth()] : ""),
+               spanne: "", tage: null, voll: true, nAlle: w.n, fehlend: [] };
+    });
+  }
+
+  if (!reihen.length) { host.innerHTML = '<p class="empty">Keine Einheiten vorhanden.</p>'; return; }
+
+  var bw = proZyklus ? 30 : 22, padL = 46, padR = 12, padT = 18, padB = 30;
+  var W = Math.max(560, padL + padR + reihen.length * bw), H = 258;
   var plotH = H - padT - padB, plotW = W - padL - padR;
-  var step = plotW / weeks.length, barW = Math.max(6, Math.min(16, step - 6));
-  var max = niceMax(weeks.reduce(function(m, w){ return Math.max(m, w.total); }, 0));
+  var step = plotW / reihen.length;
+  var barW = Math.max(6, Math.min(proZyklus ? 26 : 16, step - 6));
+  var max = niceMax(reihen.reduce(function(m, r){ return Math.max(m, r.total); }, 0));
   var y = function(v){ return padT + plotH - (v / max) * plotH; };
 
   var s = svgOpen(W, H, W);
-  /* Gitter */
   for (var t = 0; t <= 4; t++) {
     var gv = max * t / 4, gy = y(gv);
     s += '<line class="gridline" x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy + '"/>';
@@ -886,11 +1020,11 @@ function chartWeeks(model, host, legendHost, tableHost){
          (gv >= 1000 ? NF1.format(gv / 1000) + "t" : NF.format(gv)) + "</text>";
   }
 
-  weeks.forEach(function(w, i){
+  reihen.forEach(function(r, i){
     var cx = padL + i * step + (step - barW) / 2;
     var cum = 0, segs = [];
     plans.forEach(function(p){
-      var v = w.byPlan[p.name] || 0;
+      var v = r.byPlan[p.name] || 0;
       if (v > 0) { segs.push({ p: p, v: v, lo: cum, hi: cum + v }); cum += v; }
     });
     segs.forEach(function(sg, k){
@@ -903,23 +1037,33 @@ function chartWeeks(model, host, legendHost, tableHost){
         : '<rect x="' + cx + '" y="' + yh + '" width="' + barW + '" height="' + hh + '" fill="' + sg.p.color + '"/>';
     });
 
-    /* Trefferflaeche, groesser als der Balken */
-    var tip = '<div class="t-h">Woche ab ' + fmtDS(w.start) + "</div>";
-    if (w.n === 0) tip += '<div class="t-r"><span class="t-k">kein Training</span><span>—</span></div>';
+    /* Eine unvollständige Runde bekommt einen gestrichelten Deckel, damit sie
+       nicht wie ein Leistungseinbruch aussieht. */
+    if (proZyklus && !r.voll && segs.length) {
+      s += '<line x1="' + cx + '" y1="' + (y(cum) - 4) + '" x2="' + (cx + barW) + '" y2="' + (y(cum) - 4) +
+           '" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="3 2"/>';
+    }
+
+    var tip = '<div class="t-h">' + esc(r.kopf) + "</div>";
+    if (r.n === 0) tip += '<div class="t-r"><span class="t-k">kein Training</span><span>—</span></div>';
     else {
       plans.forEach(function(p){
-        if (w.byPlan[p.name]) tip += tipRow(p.name, tons(w.byPlan[p.name]), p.color);
+        if (r.byPlan[p.name]) tip += tipRow(p.name, tons(r.byPlan[p.name]), p.color);
       });
-      tip += '<div class="t-sep"></div>' + tipRow("Gesamt", tons(w.total)) + tipRow("Einheiten", String(w.n));
+      r.fehlend.forEach(function(p){ tip += tipRow(p.name, "fehlt noch", p.color); });
+      tip += '<div class="t-sep"></div>' + tipRow("Gesamt", tons(r.total)) +
+             tipRow("Einheiten", r.nAlle > r.n ? (r.n + " von " + r.nAlle + " gewertet") : String(r.n));
+      if (r.spanne) tip += tipRow("Zeitraum", r.spanne);
+      if (r.tage) tip += tipRow("Dauer", r.tage + (r.tage === 1 ? " Tag" : " Tage"));
     }
     s += '<rect class="hit-target" data-tip="' + esc(tip) + '" x="' + (padL + i * step) + '" y="' + padT +
          '" width="' + step + '" height="' + plotH + '"/>';
 
-    /* Monatswechsel als x-Beschriftung */
-    var showLabel = i === 0 || w.start.getDate() <= 7;
-    if (showLabel) {
+    /* Beschriftung ausdünnen, damit sie bei vielen Säulen lesbar bleibt */
+    var jeder = Math.max(1, Math.ceil(reihen.length / 14));
+    if (r.achse && (!proZyklus || i % jeder === 0 || i === reihen.length - 1)) {
       s += '<text class="ax" x="' + (padL + i * step + step / 2) + '" y="' + (H - padB + 15) +
-           '" text-anchor="middle">' + MON[w.start.getMonth()] + "</text>";
+           '" text-anchor="middle">' + esc(r.achse) + "</text>";
     }
   });
   s += '<line class="baseline" x1="' + padL + '" y1="' + y(0) + '" x2="' + (W - padR) + '" y2="' + y(0) + '"/>';
@@ -929,19 +1073,79 @@ function chartWeeks(model, host, legendHost, tableHost){
   bindTip(host.querySelector("svg"));
 
   legendHost.innerHTML = plans.map(function(p){
-    var sum = weeks.reduce(function(a, w){ return a + (w.byPlan[p.name] || 0); }, 0);
+    var sum = reihen.reduce(function(a, r){ return a + (r.byPlan[p.name] || 0); }, 0);
     return '<li><span class="swatch" style="background:' + p.color + '"></span>' + esc(p.name) +
            ' <span class="lv">' + tons(sum) + "</span></li>";
   }).join("");
 
-  var rows = weeks.map(function(w){
-    return "<tr><td>" + fmtD(w.start) + "</td>" +
-      plans.map(function(p){ return "<td>" + (w.byPlan[p.name] ? NF.format(Math.round(w.byPlan[p.name])) : "–") + "</td>"; }).join("") +
-      "<td>" + (w.total ? NF.format(Math.round(w.total)) : "–") + "</td><td>" + w.n + "</td></tr>";
+  if (capHost) {
+    var volle = model.cycles.filter(function(c){ return c.voll; });
+    var dauer = volle.length
+      ? volle.reduce(function(a, c){ return a + ((c.bis - c.von) / 864e5 + 1); }, 0) / volle.length
+      : null;
+    capHost.innerHTML = proZyklus
+      ? "Ein Zyklus ist eine volle Runde durch den Split — jeder Trainingstag einmal, egal über wie viele Tage. " +
+        (dauer ? "Im Schnitt " + NF1.format(dauer) + " Tage je Runde. " : "") +
+        "Eine noch laufende Runde hat einen gestrichelten Deckel. Nur Arbeitssätze, Volumen = kg × Wdh."
+      : "Nur Arbeitssätze (HIT, Back-off, Rest-Pause) — Aufwärmsätze sind nicht enthalten. Volumen = kg × Wdh. Leere Wochen bleiben als Lücke stehen.";
+  }
+
+  var ersteSpalte = proZyklus ? "Zyklus" : "Woche ab";
+  var rows = reihen.map(function(r, i){
+    var c = proZyklus ? model.cycles[i] : null;
+    return "<tr><td>" + (proZyklus ? (c.nr + (c.voll ? "" : " (läuft)")) : fmtD(model.weeks[i].start)) + "</td>" +
+      (proZyklus ? "<td>" + esc(r.spanne || "–") + "</td>" : "") +
+      plans.map(function(p){ return "<td>" + (r.byPlan[p.name] ? NF.format(Math.round(r.byPlan[p.name])) : "–") + "</td>"; }).join("") +
+      "<td>" + (r.total ? NF.format(Math.round(r.total)) : "–") + "</td><td>" + r.n + "</td></tr>";
   }).join("");
-  tableHost.innerHTML = "<table><thead><tr><th>Woche ab</th>" +
+  tableHost.innerHTML = "<table><thead><tr><th>" + ersteSpalte + "</th>" +
+    (proZyklus ? "<th>Zeitraum</th>" : "") +
     plans.map(function(p){ return "<th>" + esc(p.name) + " (kg)</th>"; }).join("") +
     "<th>Gesamt (kg)</th><th>Einheiten</th></tr></thead><tbody>" + rows + "</tbody></table>";
+}
+
+/* ---- 1b) Personal Records ----
+   Dieselbe Lesart wie in der App: der Bestwert ist die schwerste tatsächlich
+   bewegte Last, nicht der geschätzte 1RM. Der Abstand zeigt, wie weit die
+   letzte Einheit darunter lag — das ist die Zahl, die vor dem nächsten
+   Training interessiert. */
+function renderPRs(){
+  var model = MODEL, host = document.getElementById("pr-list");
+  if (!host) return;
+  var sort = (document.getElementById("pr-sort") || {}).value || "plan";
+
+  var liste = model.exercises.filter(function(ex){ return ex.topKg; }).map(function(ex){
+    var pick = ex.pick, top = pick(ex.topKg), letzte = pick(ex.last);
+    var diff = letzte.kg - top.kg;
+    var gleich = Math.abs(diff) < 0.01;
+    var istAktuell = dKey(ex.topKg.date) === dKey(ex.last.date);
+    return { ex: ex, top: top, topDatum: ex.topKg.date, letzte: letzte, letztesDatum: ex.last.date,
+             diff: diff, gleich: gleich, istAktuell: istAktuell };
+  });
+
+  var rang = { up: 0, fl: 1, dn: 2, na: 3 };
+  liste.sort(function(a, b){
+    if (sort === "recent") return b.topDatum - a.topDatum;
+    if (sort === "gap") return a.diff - b.diff;
+    return (a.ex.ordPlan - b.ex.ordPlan) || (a.ex.ordPi - b.ex.ordPi) || (a.ex.ordSi - b.ex.ordSi)
+        || a.ex.name.localeCompare(b.ex.name, "de");
+  });
+
+  if (!liste.length) { host.innerHTML = '<p class="empty">Noch keine Arbeitssätze erfasst.</p>'; return; }
+
+  host.innerHTML = liste.map(function(r){
+    /* Gerade aufgestellt zählt als Fortschritt, nicht als Stillstand. */
+    var cls = (r.istAktuell || r.diff > 0) ? "up" : (r.gleich ? "fl" : "dn");
+    var txt = r.istAktuell ? "neu" : (r.gleich ? "gehalten" :
+      (r.diff > 0 ? "+" : "−") + NF1.format(Math.abs(r.diff)) + " kg");
+    return '<div class="pr-row">' +
+      '<div class="pr-main"><div class="pr-name">' + esc(r.ex.name) + "</div>" +
+        '<div class="pr-sub">' + esc(r.ex.kat) + " · zuletzt " + fmtD(r.letztesDatum) +
+          " mit " + NF1.format(r.letzte.kg) + " kg × " + r.letzte.wdh + "</div></div>" +
+      '<div class="pr-val"><div class="pr-kg">' + NF1.format(r.top.kg) + '<span class="pr-u">kg</span></div>' +
+        '<div class="pr-meta">× ' + r.top.wdh + " · " + fmtD(r.topDatum) + "</div></div>" +
+      '<div class="pr-delta ' + cls + '">' + esc(txt) + "</div></div>";
+  }).join("");
 }
 
 /* ---- 2) Kalender-Heatmap ---- */
@@ -1177,7 +1381,7 @@ function exCard(ex){
 
 /* ================================ Rendern ================================ */
 var MODEL = null, SEED_STATE = null, SEED_META = {};
-var OPTS = { excludeForeign: true, metric: "hit" };
+var OPTS = { excludeForeign: true, metric: "hit", loadAxis: "cycle" };
 
 function renderKpis(model){
   var k = model.kpi, host = document.getElementById("kpis");
@@ -1316,7 +1520,8 @@ function renderAll(state, meta){
   MODEL = derive(state, OPTS);
   renderKpis(MODEL);
   renderForeignBar(MODEL);
-  chartWeeks(MODEL, document.getElementById("ch-week"), document.getElementById("lg-week"), document.getElementById("tb-week"));
+  chartLoad(MODEL, document.getElementById("ch-week"), document.getElementById("lg-week"), document.getElementById("tb-week"), document.getElementById("cap-week"));
+  renderPRs();
   chartHeat(MODEL, document.getElementById("ch-heat"), document.getElementById("lg-heat"), document.getElementById("cap-heat"));
   chartKat(MODEL, document.getElementById("ch-kat"), document.getElementById("tb-kat"));
   chartTypes(MODEL, document.getElementById("ch-type"), document.getElementById("lg-type"), document.getElementById("tb-type"));
@@ -1424,6 +1629,13 @@ document.getElementById("pick").addEventListener("click", function(){ document.g
   document.getElementById("ex-sort").addEventListener("change", renderExercises);
   document.getElementById("n-search").addEventListener("input", renderNotes);
   document.getElementById("n-kind").addEventListener("change", renderNotes);
+  document.getElementById("pr-sort").addEventListener("change", renderPRs);
+  document.getElementById("load-axis").addEventListener("change", function(e){
+    OPTS.loadAxis = e.target.value;
+    try { localStorage.setItem("sky.loadAxis", OPTS.loadAxis); } catch (err) {}
+    chartLoad(MODEL, document.getElementById("ch-week"), document.getElementById("lg-week"),
+              document.getElementById("tb-week"), document.getElementById("cap-week"));
+  });
   document.getElementById("ex-metric").addEventListener("change", function(e){
     OPTS.metric = e.target.value;
     try { localStorage.setItem("sky.metric", OPTS.metric); } catch (err) {}
@@ -1504,9 +1716,13 @@ function boot(saved){
     if (mt === "hit" || mt === "best") OPTS.metric = mt;
     var f = localStorage.getItem("sky.fgym");
     if (f === "0") OPTS.excludeForeign = false;
+    var ax = localStorage.getItem("sky.loadAxis");
+    if (ax === "week" || ax === "cycle") OPTS.loadAxis = ax;
   } catch (e) {}
   var sel = document.getElementById("ex-metric");
   if (sel) sel.value = OPTS.metric;
+  var ax2 = document.getElementById("load-axis");
+  if (ax2) ax2.value = OPTS.loadAxis;
 
   var state = ladeAusApp();
   if (!state.history.length) { zeigeOhneDaten(); return; }
